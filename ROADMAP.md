@@ -5,9 +5,9 @@
 Development is organized into phases, each producing a usable artifact. The LLM integration is prioritized throughout, not deferred.
 
 ```
-Phase 1: Foundation        [Core types, basic inference, no LLM]
-Phase 2: LLM Integration   [LLM-enhanced inference and suggestions]
-Phase 3: Curation Layer    [Full spec implementation, persistence]
+Phase 1: Foundation        [Core types, basic inference, no LLM]        ✅ COMPLETE
+Phase 2: LLM Integration   [LLM-enhanced inference and suggestions]     ✅ COMPLETE
+Phase 3: Curation Layer    [Full spec implementation, persistence]      ← NEXT
 Phase 4: Application       [Export, CLI, audit trail]
 Phase 5: Python Bindings   [PyO3, pip package]
 Phase 6: Polish            [Documentation, testing, optimization]
@@ -64,30 +64,30 @@ let result = crucible.analyze("metadata.tsv")?;
 
 ---
 
-## Phase 2: LLM Integration
+## Phase 2: LLM Integration ✅ COMPLETE
 
 **Goal**: LLM-enhanced inference, explanations, and suggestions.
 
 ### Deliverables
 
-- [ ] LLM provider trait
-  - [ ] Anthropic implementation (Claude API)
-  - [ ] Mock provider for testing
-- [ ] LLM-enhanced schema inference
-  - [ ] Send column samples to LLM
-  - [ ] Parse structured schema response
-  - [ ] Merge with statistical/semantic inference
-- [ ] LLM-generated explanations
-  - [ ] Observation explanations
-  - [ ] Domain-aware context
-- [ ] Suggestion generator
-  - [ ] Basic suggestion types (standardize, convert_na, flag)
-  - [ ] LLM-generated rationale
-  - [ ] Confidence calibration
-- [ ] Context hints
-  - [ ] User-provided hints (study name, domain)
-  - [ ] File-derived context (filename, related files)
-  - [ ] Context passed to LLM
+- [x] LLM provider trait
+  - [x] Anthropic implementation (Claude API)
+  - [x] Mock provider for testing
+- [x] LLM-enhanced schema inference
+  - [x] Send column samples to LLM
+  - [x] Parse structured schema response
+  - [x] Merge with statistical/semantic inference
+- [x] LLM-generated explanations
+  - [x] Observation explanations
+  - [x] Domain-aware context
+- [x] Suggestion generator
+  - [x] Basic suggestion types (standardize, convert_na, flag)
+  - [x] LLM-generated rationale
+  - [x] Confidence calibration
+- [x] Context hints
+  - [x] User-provided hints (study name, domain)
+  - [x] File-derived context (filename, related files)
+  - [x] Context passed to LLM
 
 ### Exit Criteria
 
