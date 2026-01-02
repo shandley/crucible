@@ -147,14 +147,29 @@ impl LlmProvider for MockProvider {
             return Ok(None);
         }
 
+        // Helper to extract specific details from the observation
+        let col_name = &observation.column;
+        let desc = &observation.description;
+
         let suggestion = match observation.observation_type {
             ObservationType::MissingPattern => {
+                // Extract pattern from evidence if available
+                let pattern_info = observation
+                    .evidence
+                    .pattern
+                    .as_ref()
+                    .map(|p| format!(" (pattern: '{}')", p))
+                    .unwrap_or_default();
+
                 Some(
                     Suggestion::new(
                         &observation.id,
                         SuggestionAction::ConvertNa,
-                        "Convert non-standard missing value representations to proper null values \
-                         for correct statistical handling.",
+                        format!(
+                            "In column '{}': Convert non-standard missing values{} to proper \
+                             null values for consistent handling.",
+                            col_name, pattern_info
+                        ),
                     )
                     .with_priority(2)
                     .with_confidence(0.9)
@@ -162,12 +177,44 @@ impl LlmProvider for MockProvider {
                 )
             }
             ObservationType::Inconsistency => {
+                // Build specific rationale based on the description
+                let rationale = if desc.contains("Case variants") {
+                    format!(
+                        "In column '{}': Standardize case variants to a consistent format. {}",
+                        col_name, desc
+                    )
+                } else if desc.contains("typo") {
+                    format!(
+                        "In column '{}': Review and correct potential typos. {}",
+                        col_name, desc
+                    )
+                } else if desc.contains("semantic equivalent") {
+                    format!(
+                        "In column '{}': Standardize equivalent terms to canonical values. {}",
+                        col_name, desc
+                    )
+                } else if desc.contains("date format") || desc.contains("Mixed date") {
+                    format!(
+                        "In column '{}': Standardize to a single date format (ISO recommended). {}",
+                        col_name, desc
+                    )
+                } else if desc.contains("boolean") {
+                    format!(
+                        "In column '{}': Standardize boolean representations (recommend: true/false). {}",
+                        col_name, desc
+                    )
+                } else {
+                    format!(
+                        "In column '{}': Standardize value formatting. {}",
+                        col_name, desc
+                    )
+                };
+
                 Some(
                     Suggestion::new(
                         &observation.id,
                         SuggestionAction::Standardize,
-                        "Standardize value formatting to ensure consistent representation \
-                         across the dataset.",
+                        rationale,
                     )
                     .with_priority(3)
                     .with_confidence(0.85)
@@ -175,12 +222,29 @@ impl LlmProvider for MockProvider {
                 )
             }
             ObservationType::Outlier => {
+                // Include sample values if available
+                let value_info = observation
+                    .evidence
+                    .value
+                    .as_ref()
+                    .map(|v| format!(" Values: {}", v))
+                    .unwrap_or_default();
+
+                let row_info = if !observation.evidence.sample_rows.is_empty() {
+                    format!(" (rows: {:?})", observation.evidence.sample_rows)
+                } else {
+                    String::new()
+                };
+
                 Some(
                     Suggestion::new(
                         &observation.id,
                         SuggestionAction::Flag,
-                        "Flag outlier values for manual review rather than automatic removal, \
-                         as they may represent valid edge cases.",
+                        format!(
+                            "In column '{}': Review outlier values for validity.{}{} \
+                             These may be data entry errors or valid edge cases.",
+                            col_name, value_info, row_info
+                        ),
                     )
                     .with_priority(4)
                     .with_confidence(0.7)
@@ -188,12 +252,20 @@ impl LlmProvider for MockProvider {
                 )
             }
             ObservationType::TypeMismatch => {
+                let row_info = if !observation.evidence.sample_rows.is_empty() {
+                    format!(" (rows: {:?})", observation.evidence.sample_rows)
+                } else {
+                    String::new()
+                };
+
                 Some(
                     Suggestion::new(
                         &observation.id,
                         SuggestionAction::Coerce,
-                        "Attempt type coercion for mismatched values, or flag for review if \
-                         coercion fails.",
+                        format!(
+                            "In column '{}': {} Attempt type coercion or flag for manual review.",
+                            col_name, desc
+                        ) + &row_info,
                     )
                     .with_priority(3)
                     .with_confidence(0.75)
@@ -201,15 +273,48 @@ impl LlmProvider for MockProvider {
                 )
             }
             ObservationType::Duplicate => {
+                // Extract duplicate values from evidence
+                let dup_info = observation
+                    .evidence
+                    .value
+                    .as_ref()
+                    .map(|v| format!(" Duplicates: {}", v))
+                    .unwrap_or_default();
+
                 Some(
                     Suggestion::new(
                         &observation.id,
                         SuggestionAction::Flag,
-                        "Flag duplicate entries for manual review to determine if they should \
-                         be merged or removed.",
+                        format!(
+                            "In column '{}': Review duplicate values.{} Determine if entries \
+                             should be merged, removed, or are valid repeats.",
+                            col_name, dup_info
+                        ),
                     )
                     .with_priority(2)
                     .with_confidence(0.8)
+                    .with_suggester("mock_llm"),
+                )
+            }
+            ObservationType::Completeness => {
+                let pct = observation
+                    .evidence
+                    .percentage
+                    .map(|p| format!(" ({:.1}% missing)", p))
+                    .unwrap_or_default();
+
+                Some(
+                    Suggestion::new(
+                        &observation.id,
+                        SuggestionAction::Flag,
+                        format!(
+                            "In column '{}': High rate of missing values.{} Consider \
+                             imputation strategy or documenting missingness pattern.",
+                            col_name, pct
+                        ),
+                    )
+                    .with_priority(3)
+                    .with_confidence(0.7)
                     .with_suggester("mock_llm"),
                 )
             }

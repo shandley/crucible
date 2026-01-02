@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use serde_json::json;
 
 use crate::input::DataTable;
-use crate::schema::{ColumnSchema, ColumnType, Constraint, TableSchema};
+use crate::schema::{ColumnSchema, ColumnType, Constraint, SemanticRole, TableSchema};
 
 use super::observation::{Evidence, Observation, ObservationType, Severity};
 
@@ -954,6 +954,11 @@ impl Validator for TypoValidator {
                 continue;
             }
 
+            // Skip identifier columns - they're meant to be unique, not typos of each other
+            if col_schema.semantic_role == SemanticRole::Identifier {
+                continue;
+            }
+
             let potential_typos = self.find_potential_typos(table, col_schema);
 
             if !potential_typos.is_empty() {
@@ -1306,6 +1311,272 @@ impl SemanticEquivalenceValidator {
     }
 }
 
+/// Validates date columns for format inconsistencies.
+///
+/// Detects when dates in the same column use different formats
+/// (e.g., "2024-01-15" vs "01/15/2024" vs "Jan 15 2024").
+pub struct DateFormatValidator;
+
+/// Known date format patterns with their regex and description.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
+enum DateFormat {
+    /// ISO format: 2024-01-15
+    Iso,
+    /// US format with slashes: 01/15/2024
+    UsSlash,
+    /// US format with dashes: 01-15-2024
+    UsDash,
+    /// European format with slashes: 15/01/2024
+    EuSlash,
+    /// European format with dashes: 15-01-2024
+    EuDash,
+    /// Month name format: Jan 15 2024 or January 15, 2024
+    MonthName,
+    /// Year/month/day with slashes: 2024/01/15
+    YearSlash,
+    /// Unknown format
+    Unknown,
+}
+
+impl DateFormat {
+    fn description(&self) -> &'static str {
+        match self {
+            DateFormat::Iso => "ISO (YYYY-MM-DD)",
+            DateFormat::UsSlash => "US (MM/DD/YYYY)",
+            DateFormat::UsDash => "US (MM-DD-YYYY)",
+            DateFormat::EuSlash => "EU (DD/MM/YYYY)",
+            DateFormat::EuDash => "EU (DD-MM-YYYY)",
+            DateFormat::MonthName => "Month name (Mon DD YYYY)",
+            DateFormat::YearSlash => "Year first (YYYY/MM/DD)",
+            DateFormat::Unknown => "Unknown",
+        }
+    }
+}
+
+impl DateFormatValidator {
+    /// Detect the date format of a string value.
+    fn detect_format(value: &str) -> Option<DateFormat> {
+        let trimmed = value.trim();
+
+        // ISO format: 2024-01-15
+        if Self::matches_iso(trimmed) {
+            return Some(DateFormat::Iso);
+        }
+
+        // Year/month/day with slashes: 2024/01/15
+        if Self::matches_year_slash(trimmed) {
+            return Some(DateFormat::YearSlash);
+        }
+
+        // US format with slashes: 01/15/2024 or 1/15/2024
+        if Self::matches_us_slash(trimmed) {
+            return Some(DateFormat::UsSlash);
+        }
+
+        // US format with dashes: 01-15-2024
+        if Self::matches_us_dash(trimmed) {
+            return Some(DateFormat::UsDash);
+        }
+
+        // Month name format: Jan 15 2024, January 15, 2024, etc.
+        if Self::matches_month_name(trimmed) {
+            return Some(DateFormat::MonthName);
+        }
+
+        None
+    }
+
+    fn matches_iso(s: &str) -> bool {
+        // YYYY-MM-DD
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+        parts[0].len() == 4
+            && parts[0].chars().all(|c| c.is_ascii_digit())
+            && parts[1].len() <= 2
+            && parts[1].chars().all(|c| c.is_ascii_digit())
+            && parts[2].len() <= 2
+            && parts[2].chars().all(|c| c.is_ascii_digit())
+    }
+
+    fn matches_year_slash(s: &str) -> bool {
+        // YYYY/MM/DD
+        let parts: Vec<&str> = s.split('/').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+        parts[0].len() == 4
+            && parts[0].chars().all(|c| c.is_ascii_digit())
+            && parts[1].len() <= 2
+            && parts[1].chars().all(|c| c.is_ascii_digit())
+            && parts[2].len() <= 2
+            && parts[2].chars().all(|c| c.is_ascii_digit())
+    }
+
+    fn matches_us_slash(s: &str) -> bool {
+        // MM/DD/YYYY
+        let parts: Vec<&str> = s.split('/').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+        parts[0].len() <= 2
+            && parts[0].chars().all(|c| c.is_ascii_digit())
+            && parts[1].len() <= 2
+            && parts[1].chars().all(|c| c.is_ascii_digit())
+            && parts[2].len() == 4
+            && parts[2].chars().all(|c| c.is_ascii_digit())
+    }
+
+    fn matches_us_dash(s: &str) -> bool {
+        // MM-DD-YYYY (non-ISO with year at end)
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+        parts[0].len() <= 2
+            && parts[0].chars().all(|c| c.is_ascii_digit())
+            && parts[1].len() <= 2
+            && parts[1].chars().all(|c| c.is_ascii_digit())
+            && parts[2].len() == 4
+            && parts[2].chars().all(|c| c.is_ascii_digit())
+    }
+
+    fn matches_month_name(s: &str) -> bool {
+        let months = [
+            "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+            "january", "february", "march", "april", "june", "july", "august", "september",
+            "october", "november", "december",
+        ];
+
+        let lower = s.to_lowercase();
+        // Remove commas and extra spaces
+        let cleaned: String = lower
+            .chars()
+            .filter(|c| !(*c == ','))
+            .collect();
+
+        for month in &months {
+            if cleaned.contains(month) {
+                // Check if it also has a year (4 digits)
+                if cleaned.chars().filter(|c| c.is_ascii_digit()).count() >= 4 {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
+
+impl Validator for DateFormatValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Only check date columns
+            if col_schema.inferred_type != ColumnType::Date {
+                continue;
+            }
+
+            // Count occurrences of each format
+            let mut format_counts: IndexMap<DateFormat, (usize, Vec<String>)> = IndexMap::new();
+            let mut rows_with_format: IndexMap<DateFormat, Vec<usize>> = IndexMap::new();
+
+            for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+                if DataTable::is_null_value(value) {
+                    continue;
+                }
+
+                if let Some(format) = Self::detect_format(value) {
+                    let entry = format_counts.entry(format.clone()).or_insert((0, Vec::new()));
+                    entry.0 += 1;
+                    if entry.1.len() < 3 {
+                        entry.1.push(value.to_string());
+                    }
+                    rows_with_format
+                        .entry(format)
+                        .or_default()
+                        .push(row_idx);
+                }
+            }
+
+            // If more than one format detected, create an observation
+            if format_counts.len() > 1 {
+                let total: usize = format_counts.values().map(|(c, _)| c).sum();
+                let pct = 100.0; // All dates have format issues if inconsistent
+
+                // Format examples
+                let format_examples: Vec<String> = format_counts
+                    .iter()
+                    .map(|(fmt, (count, examples))| {
+                        format!(
+                            "{}: {} ({} values)",
+                            fmt.description(),
+                            examples.first().unwrap_or(&String::new()),
+                            count
+                        )
+                    })
+                    .collect();
+
+                // Recommend the most common format
+                let most_common = format_counts
+                    .iter()
+                    .max_by_key(|(_, (count, _))| *count)
+                    .map(|(fmt, _)| fmt.description())
+                    .unwrap_or("ISO (YYYY-MM-DD)");
+
+                // Get sample rows for non-dominant formats
+                let dominant_format = format_counts
+                    .iter()
+                    .max_by_key(|(_, (count, _))| *count)
+                    .map(|(fmt, _)| fmt.clone());
+
+                let sample_rows: Vec<usize> = rows_with_format
+                    .iter()
+                    .filter(|(fmt, _)| Some(*fmt) != dominant_format.as_ref())
+                    .flat_map(|(_, rows)| rows.iter().take(3).map(|r| r + 1)) // 1-indexed
+                    .take(5)
+                    .collect();
+
+                let obs = Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "Mixed date formats detected ({}). Recommend standardizing to {}",
+                        format_examples.join("; "),
+                        most_common
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total)
+                        .with_percentage(pct)
+                        .with_sample_rows(sample_rows)
+                        .with_value_counts(Some(json!(
+                            format_counts
+                                .iter()
+                                .map(|(fmt, (count, examples))| {
+                                    (
+                                        fmt.description().to_string(),
+                                        json!({"count": count, "examples": examples})
+                                    )
+                                })
+                                .collect::<IndexMap<_, _>>()
+                        ))),
+                )
+                .with_confidence(0.90)
+                .with_detector("date_format_validator");
+
+                observations.push(obs);
+            }
+        }
+
+        observations
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -1327,6 +1598,7 @@ impl ValidationEngine {
                 Box::new(CaseVariantValidator),
                 Box::new(TypoValidator::default()),
                 Box::new(SemanticEquivalenceValidator::default()),
+                Box::new(DateFormatValidator),
                 Box::new(MissingPatternValidator::default()),
             ],
         }
