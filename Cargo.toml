@@ -32,5 +32,8 @@ indexmap = { version = "2.0", features = ["serde"] }
 # Hashing
 sha2 = "0.10"
 
+# HTTP client (for LLM API calls)
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+
 # Async runtime (for future LLM integration)
 tokio = { version = "1", features = ["full"] }

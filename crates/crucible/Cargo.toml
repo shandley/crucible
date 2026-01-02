@@ -16,6 +16,7 @@ chrono.workspace = true
 regex.workspace = true
 indexmap.workspace = true
 sha2.workspace = true
+reqwest.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }

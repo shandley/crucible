@@ -1,13 +1,16 @@
 //! Main Crucible struct and public API.
 
 use std::path::Path;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
 use crate::inference::{FusionConfig, InferenceFusion};
-use crate::input::{Parser, ParserConfig, SourceMetadata};
+use crate::input::{ContextHints, Parser, ParserConfig, SourceMetadata};
+use crate::llm::LlmProvider;
 use crate::schema::TableSchema;
+use crate::suggestion::Suggestion;
 use crate::validation::{Observation, ValidationEngine};
 
 /// Configuration for Crucible analysis.
@@ -19,6 +22,8 @@ pub struct CrucibleConfig {
     pub fusion: FusionConfig,
     /// Maximum rows to analyze (None = all).
     pub max_rows: Option<usize>,
+    /// Context hints for LLM enhancement.
+    pub context: ContextHints,
 }
 
 impl Default for CrucibleConfig {
@@ -27,6 +32,7 @@ impl Default for CrucibleConfig {
             parser: ParserConfig::default(),
             fusion: FusionConfig::default(),
             max_rows: None,
+            context: ContextHints::default(),
         }
     }
 }
@@ -40,6 +46,8 @@ pub struct AnalysisResult {
     pub schema: TableSchema,
     /// Data quality observations.
     pub observations: Vec<Observation>,
+    /// Suggested fixes for observations (LLM-generated if enabled).
+    pub suggestions: Vec<Suggestion>,
     /// Summary statistics.
     pub summary: AnalysisSummary,
 }
@@ -73,11 +81,11 @@ pub struct ObservationCounts {
 
 /// The main Crucible analysis engine.
 pub struct Crucible {
-    #[allow(dead_code)]
     config: CrucibleConfig,
     parser: Parser,
     inference: InferenceFusion,
     validation: ValidationEngine,
+    llm_provider: Option<Arc<dyn LlmProvider>>,
 }
 
 impl Crucible {
@@ -97,7 +105,28 @@ impl Crucible {
             parser,
             inference,
             validation,
+            llm_provider: None,
         }
+    }
+
+    /// Add an LLM provider for enhanced inference and explanations.
+    ///
+    /// When an LLM provider is configured, Crucible will:
+    /// - Enhance column schemas with semantic insights
+    /// - Generate human-readable explanations for observations
+    /// - Produce actionable suggestions for data quality issues
+    pub fn with_llm(mut self, provider: impl LlmProvider + 'static) -> Self {
+        self.llm_provider = Some(Arc::new(provider));
+        self
+    }
+
+    /// Set context hints for LLM enhancement.
+    ///
+    /// Context hints help the LLM provide more relevant insights
+    /// by understanding the domain and purpose of the data.
+    pub fn with_context(mut self, context: ContextHints) -> Self {
+        self.config.context = context;
+        self
     }
 
     /// Analyze a data file and produce observations.
@@ -108,10 +137,27 @@ impl Crucible {
         let (table, source) = self.parser.parse_file(path)?;
 
         // Run inference to get schema
-        let schema = self.inference.analyze_table(&table);
+        let mut schema = self.inference.analyze_table(&table);
+
+        // Enhance schema with LLM if available
+        if let Some(ref llm) = self.llm_provider {
+            self.enhance_schema(&mut schema, &table, llm.as_ref());
+        }
 
         // Run validation to get observations
-        let observations = self.validation.validate(&table, &schema);
+        let mut observations = self.validation.validate(&table, &schema);
+
+        // Enhance observations with LLM explanations
+        if let Some(ref llm) = self.llm_provider {
+            self.enhance_observations(&mut observations, &schema, llm.as_ref());
+        }
+
+        // Generate suggestions
+        let suggestions = if let Some(ref llm) = self.llm_provider {
+            self.generate_suggestions(&observations, &schema, llm.as_ref())
+        } else {
+            Vec::new()
+        };
 
         // Compute summary
         let summary = self.compute_summary(&schema, &observations);
@@ -120,8 +166,81 @@ impl Crucible {
             source,
             schema,
             observations,
+            suggestions,
             summary,
         })
+    }
+
+    /// Enhance column schemas with LLM-generated insights.
+    fn enhance_schema(
+        &self,
+        schema: &mut TableSchema,
+        table: &crate::input::DataTable,
+        llm: &dyn LlmProvider,
+    ) {
+        if !llm.config().enhance_schema {
+            return;
+        }
+
+        for column in &mut schema.columns {
+            // Get sample values for this column
+            let samples: Vec<String> = table
+                .column_values(column.position)
+                .take(10)
+                .map(|s| s.to_string())
+                .collect();
+
+            // Get LLM enhancement
+            if let Ok(enhancement) = llm.enhance_schema(column, &samples, &self.config.context) {
+                if !enhancement.insight.is_empty() {
+                    column.llm_insight = Some(enhancement.insight);
+                }
+            }
+        }
+    }
+
+    /// Enhance observations with LLM-generated explanations.
+    fn enhance_observations(
+        &self,
+        observations: &mut [Observation],
+        schema: &TableSchema,
+        llm: &dyn LlmProvider,
+    ) {
+        if !llm.config().explain_observations {
+            return;
+        }
+
+        for obs in observations {
+            let column = schema.columns.iter().find(|c| c.name == obs.column);
+            if let Ok(explanation) = llm.explain_observation(obs, column, &self.config.context) {
+                if !explanation.is_empty() {
+                    obs.llm_explanation = Some(explanation);
+                }
+            }
+        }
+    }
+
+    /// Generate suggestions for observations.
+    fn generate_suggestions(
+        &self,
+        observations: &[Observation],
+        schema: &TableSchema,
+        llm: &dyn LlmProvider,
+    ) -> Vec<Suggestion> {
+        if !llm.config().generate_suggestions {
+            return Vec::new();
+        }
+
+        let mut suggestions = Vec::new();
+        for obs in observations {
+            let column = schema.columns.iter().find(|c| c.name == obs.column);
+            if let Ok(Some(suggestion)) =
+                llm.generate_suggestion(obs, column, &self.config.context)
+            {
+                suggestions.push(suggestion);
+            }
+        }
+        suggestions
     }
 
     /// Compute summary statistics from analysis results.

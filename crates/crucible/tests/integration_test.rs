@@ -450,3 +450,151 @@ fn test_result_serialization() {
     assert!(json.contains("\"columns\""));
     assert!(json.contains("\"observations\""));
 }
+
+// =============================================================================
+// LLM Integration Tests (using MockProvider)
+// =============================================================================
+
+use crucible::{ContextHints, MockProvider, SuggestionAction};
+
+#[test]
+fn test_llm_enhanced_analysis() {
+    let content = "sample_id,status\n\
+                   S001,active\n\
+                   S002,missing\n\
+                   S003,inactive\n\
+                   S004,missing\n";
+    let file = create_test_file(content);
+
+    // Create with mock LLM provider
+    let crucible = Crucible::new()
+        .with_llm(MockProvider::new())
+        .with_context(ContextHints::new().with_domain("biomedical"));
+
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    // Schema should have LLM insights
+    for col in &result.schema.columns {
+        assert!(col.llm_insight.is_some(), "Column {} should have LLM insight", col.name);
+        let insight = col.llm_insight.as_ref().unwrap();
+        assert!(insight.contains(&col.name), "Insight should mention column name");
+        assert!(insight.contains("biomedical"), "Insight should mention domain");
+    }
+}
+
+#[test]
+fn test_llm_observation_explanations() {
+    let content = "id,status\n1,active\n2,missing\n3,active\n4,missing\n";
+    let file = create_test_file(content);
+
+    let crucible = Crucible::new().with_llm(MockProvider::new());
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    // Find observations about "missing" pattern
+    let missing_obs: Vec<_> = result
+        .observations
+        .iter()
+        .filter(|o| o.observation_type == ObservationType::MissingPattern)
+        .collect();
+
+    // Should have LLM explanations
+    for obs in &missing_obs {
+        assert!(
+            obs.llm_explanation.is_some(),
+            "Observation should have LLM explanation"
+        );
+    }
+}
+
+#[test]
+fn test_llm_generates_suggestions() {
+    let content = "id,status\n1,active\n2,missing\n3,active\n4,missing\n";
+    let file = create_test_file(content);
+
+    let crucible = Crucible::new().with_llm(MockProvider::new());
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    // Should have suggestions for observations
+    assert!(
+        !result.suggestions.is_empty(),
+        "Should have at least one suggestion"
+    );
+
+    // MissingPattern should generate ConvertNa suggestion
+    let convert_na_suggestions: Vec<_> = result
+        .suggestions
+        .iter()
+        .filter(|s| s.action == SuggestionAction::ConvertNa)
+        .collect();
+
+    assert!(
+        !convert_na_suggestions.is_empty(),
+        "Should have ConvertNa suggestion for missing pattern"
+    );
+}
+
+#[test]
+fn test_analysis_works_without_llm() {
+    let content = "id,name,age\n1,Alice,30\n2,Bob,25\n3,Carol,28\n";
+    let file = create_test_file(content);
+
+    // Without LLM provider
+    let crucible = Crucible::new();
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    // Should still work, just without LLM features
+    assert_eq!(result.schema.columns.len(), 3);
+    assert!(result.suggestions.is_empty(), "Without LLM, no suggestions");
+
+    // llm_insight should be None
+    for col in &result.schema.columns {
+        assert!(col.llm_insight.is_none());
+    }
+}
+
+#[test]
+fn test_context_hints_in_analysis() {
+    let content = "sample_id,treatment\nS001,placebo\nS002,drug_a\nS003,placebo\n";
+    let file = create_test_file(content);
+
+    let context = ContextHints::new()
+        .with_study_name("IBD Clinical Trial Phase 2")
+        .with_domain("clinical_trial")
+        .with_identifier_column("sample_id");
+
+    let crucible = Crucible::new()
+        .with_llm(MockProvider::new())
+        .with_context(context);
+
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    // The mock provider uses domain in its responses
+    for col in &result.schema.columns {
+        if let Some(insight) = &col.llm_insight {
+            assert!(
+                insight.contains("clinical_trial"),
+                "Insight should incorporate domain context"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_suggestion_fields() {
+    let content = "id,status\n1,active\n2,missing\n3,active\n4,missing\n";
+    let file = create_test_file(content);
+
+    let crucible = Crucible::new().with_llm(MockProvider::new());
+    let result = crucible.analyze(file.path()).expect("Analysis failed");
+
+    for suggestion in &result.suggestions {
+        // All suggestions should have required fields
+        assert!(!suggestion.id.is_empty());
+        assert!(!suggestion.observation_id.is_empty());
+        assert!(!suggestion.rationale.is_empty());
+        assert!(suggestion.confidence > 0.0);
+        assert!(suggestion.confidence <= 1.0);
+        assert!(suggestion.priority >= 1);
+        assert!(suggestion.priority <= 10);
+    }
+}
