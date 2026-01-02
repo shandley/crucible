@@ -1,0 +1,21 @@
+SampleID	PatientID	BodySite	CollectionMethod	StorageTemp	DNAConc_ng_ul	A260_A280	ReadCount	TimePoint	Treatment	Response
+MIC_001	P001	gut	swab	-80C	45.2	1.89	125000	baseline	placebo
+MIC_002	P002	Gut	Swab	-80	52.1	1.92	148000	baseline	drug_a	responder
+MIC_003	P003	stool	fecal_collection	-80C	38.7	1.85	98000	week_4	Drug A	non-responder
+MIC_004	P004	feces	swab	-80 C	41.3	1.91	132000	Week 4	placebo	NA
+MIC_005	P005	gut	Fecal collection	-80C	0.5	1.78	15000	week_8	drug_a	Responder
+MIC_006	P006	intestine	swab	frozen	48.9	1.94	156000	week 8	drug_b	partial
+MIC_007	P007	GI tract	swab	-80C	55.2	2.15	167000	baseline	Drug B
+MIC_008	P008	gut	swab	RT	33.8	1.87	89000	baseline	placebo	non-responder
+MIC_009	P009	gut	swab	-80C	not measured	NA	142000	week_4	drug_a	responder
+MIC_010	P010	stool	swab	-80C	47.6	1.90	138500	week_4	drug_a	Non-Responder
+MIC_011	P011	gut	swab	-80C	42.1	1.88	-5000	week_8	drug_b	responder
+MIC_012	P012	gut	swab	-80C	51.8		151000	week_8	placebo	NA
+MIC_013	P013	Gut	SWAB	-80C	39.4	1.86	112000	baseline	drug_a	pending
+MIC_014	P014	gut	swab	-80C	44.7	1.91	129000	week_4	drug_b	responder
+MIC_015	P001	gut	swab	-80C	46.3	1.89	133000	week_4	placebo	non-responder
+MIC_016	P016	gut	swab	-80C	1250.0	1.92	145000	week_8	drug_a	responder
+MIC_017	P017	gut	swab	-80C	43.2	1.88	126000	baseline	drug b
+MIC_018	P018	gut	biopsy	-80C	38.1	1.84	95000	baseline	placebo	non-respnder
+MIC_019	P019	gut	swab	-80C	missing	1.90	141000	week_4	drug_a	responder
+MIC_020	P020	gut	swab	-80C	49.5	1.93	147000	week_8	Drug_A	Responder

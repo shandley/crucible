@@ -1,0 +1,21 @@
+patient_id,enrollment_date,age_years,gender,ethnicity,weight_kg,height_cm,smoking_status,diabetes,hypertension,prior_treatment,arm,visit_number,adverse_event,ae_severity,discontinued
+PT001,2023-06-15,45,Male,Caucasian,78.5,175,never,no,yes,chemotherapy,treatment,1,none,NA,no
+PT002,2023-06-18,52,Female,African American,65.2,162,former,yes,no,radiation,placebo,1,nausea,mild,no
+PT003,06/20/2023,38,M,Hispanic,82.1,180,current,No,No,none,treatment,1,headache,Mild,no
+PT004,2023-06-22,61,F,Asian,58.9,155,Never,FALSE,TRUE,chemo + radiation,treatment,1,fatigue,moderate,no
+PT005,2023-06-25,47,male,caucasian,91.3,178,FORMER,0,1,Chemotherapy,placebo,1,none,,no
+PT006,2023-06-28,55,Female,White,67.8,165,never,no,no,None,treatment,1,rash,severe,yes
+PT007,2023-07-01,43,M,Black,75.4,172,former,yes,yes,radiation therapy,placebo,1,dizziness,mild,no
+PT008,2023-07-04,59,F,Hispanic/Latino,62.5,158,never,no,no,prior chemo,treatment,1,none,n/a,no
+PT009,2023-07-07,66,Male,Caucasian,NOT RECORDED,170,current,yes,yes,chemotherapy,treatment,2,vomiting,moderate,no
+PT010,2023-07-10,41,Female,Asian,54.2,152,never,no,no,none,placebo,2,,NA,no
+PT011,July 12 2023,49,M,Caucasian,88.7,182,former,FALSE,FALSE,radiation,treatment,2,fatigue,mild,no
+PT012,2023-07-15,57,F,African-American,71.3,167,never,TRUE,TRUE,chemo,placebo,2,headache,mild,no
+PT001,2023-07-18,45,Male,Caucasian,77.8,175,never,no,yes,chemotherapy,treatment,2,nausea,mild,no
+PT014,2023-07-21,63,M,White,84.6,176,former,yes,no,radiation + chemo,treatment,2,none,NA,no
+PT015,2023-07-24,44,Female,Hispanic,60.1,160,never,no,no,none,placebo,2,rash,moderate,yes
+PT016,2023-07-27,51,M,Asian,350.0,173,current,no,yes,chemotherapy,treatment,3,fatigue,severe,no
+PT017,2023-07-30,48,F,Caucasian,68.4,164,Never,no,no,none,placebo,3,none,na,no
+PT018,2023-08-02,56,male,black,79.9,177,former,yes,TRUE,radiation,treatment,3,diarrhea,Moderate,no
+PT019,2023-08-05,-35,F,Hispanic,63.7,161,never,no,no,prior treatment,placebo,3,headache,mild,no
+PT020,2023-08-08,50,Unknown,Other,72.1,169,unknown,unknown,unknown,unknown,treatment,3,allergic reaction,severe,TRUE

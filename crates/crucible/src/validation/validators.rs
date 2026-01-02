@@ -577,6 +577,355 @@ impl MissingPatternValidator {
     }
 }
 
+/// Validates identifier columns for duplicates.
+/// This catches cases where sample_id, patient_id etc. have duplicate values.
+pub struct IdentifierDuplicateValidator;
+
+impl Validator for IdentifierDuplicateValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        use crate::schema::SemanticRole;
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Check identifier columns that aren't already marked as unique
+            // (UniquenessValidator handles columns with Unique constraint)
+            if col_schema.semantic_role == SemanticRole::Identifier && !col_schema.unique {
+                let duplicates = self.find_duplicates(table, col_schema);
+                if !duplicates.is_empty() {
+                    let dup_count: usize = duplicates.values().map(|v| v.len() - 1).sum();
+                    let pct = (dup_count as f64 / table.row_count() as f64) * 100.0;
+
+                    // Get sample duplicate values for the message
+                    let sample_dups: Vec<_> = duplicates.keys().take(3).cloned().collect();
+
+                    let obs = Observation::new(
+                        ObservationType::Duplicate,
+                        Severity::Error,
+                        &col_schema.name,
+                        format!(
+                            "Identifier column has {} duplicate values: {:?}",
+                            dup_count, sample_dups
+                        ),
+                    )
+                    .with_evidence(
+                        Evidence::new()
+                            .with_occurrences(dup_count)
+                            .with_percentage(pct)
+                            .with_value_counts(Some(json!(
+                                duplicates
+                                    .iter()
+                                    .take(5)
+                                    .map(|(k, v)| (k.clone(), v.len()))
+                                    .collect::<IndexMap<_, _>>()
+                            ))),
+                    )
+                    .with_confidence(0.95)
+                    .with_detector("identifier_duplicate_validator");
+
+                    observations.push(obs);
+                }
+            }
+        }
+
+        observations
+    }
+}
+
+impl IdentifierDuplicateValidator {
+    fn find_duplicates(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> IndexMap<String, Vec<usize>> {
+        let mut value_rows: IndexMap<String, Vec<usize>> = IndexMap::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+
+            value_rows
+                .entry(value.trim().to_string())
+                .or_default()
+                .push(row_idx);
+        }
+
+        // Keep only duplicates
+        value_rows.retain(|_, rows| rows.len() > 1);
+        value_rows
+    }
+}
+
+/// Validates for statistical outliers using IQR method and domain knowledge.
+pub struct StatisticalOutlierValidator {
+    /// IQR multiplier for outlier detection (typically 1.5 for mild, 3.0 for extreme).
+    iqr_multiplier: f64,
+}
+
+impl Default for StatisticalOutlierValidator {
+    fn default() -> Self {
+        Self {
+            iqr_multiplier: 1.5,
+        }
+    }
+}
+
+impl Validator for StatisticalOutlierValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            if !col_schema.inferred_type.is_numeric() {
+                continue;
+            }
+
+            // Check for statistical outliers using IQR
+            if let Some(ref numeric_stats) = col_schema.statistics.numeric {
+                let outliers = self.find_iqr_outliers(table, col_schema, numeric_stats);
+                if !outliers.is_empty() {
+                    let count = outliers.len();
+                    let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+                    // Get actual outlier values for display
+                    let outlier_values: Vec<f64> = outliers
+                        .iter()
+                        .take(5)
+                        .filter_map(|(_, v)| v.parse::<f64>().ok())
+                        .collect();
+
+                    let obs = Observation::new(
+                        ObservationType::Outlier,
+                        if count > 1 { Severity::Warning } else { Severity::Info },
+                        &col_schema.name,
+                        format!(
+                            "{} statistical outlier(s) detected (IQR method): {:?}",
+                            count, outlier_values
+                        ),
+                    )
+                    .with_evidence(
+                        Evidence::new()
+                            .with_occurrences(count)
+                            .with_percentage(pct)
+                            .with_sample_rows(outliers.iter().map(|(r, _)| *r).take(5).collect())
+                            .with_expected(json!({
+                                "q1": numeric_stats.q1,
+                                "q3": numeric_stats.q3,
+                                "iqr": numeric_stats.iqr(),
+                                "lower_bound": numeric_stats.q1 - self.iqr_multiplier * numeric_stats.iqr(),
+                                "upper_bound": numeric_stats.q3 + self.iqr_multiplier * numeric_stats.iqr()
+                            })),
+                    )
+                    .with_confidence(0.85)
+                    .with_detector("statistical_outlier_validator");
+
+                    observations.push(obs);
+                }
+            }
+
+            // Check for domain-specific invalid values (negative ages, weights, counts)
+            let negative_issues = self.find_invalid_negative_values(table, col_schema);
+            if !negative_issues.is_empty() {
+                let count = negative_issues.len();
+                let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+                let obs = Observation::new(
+                    ObservationType::Outlier,
+                    Severity::Error,
+                    &col_schema.name,
+                    format!(
+                        "{} impossible negative value(s) in column '{}' (should be non-negative)",
+                        count, col_schema.name
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(negative_issues.iter().map(|(r, _)| *r).take(5).collect())
+                        .with_expected(json!({"min": 0})),
+                )
+                .with_confidence(0.95)
+                .with_detector("statistical_outlier_validator");
+
+                observations.push(obs);
+            }
+        }
+
+        observations
+    }
+}
+
+impl StatisticalOutlierValidator {
+    fn find_iqr_outliers(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+        stats: &crate::schema::NumericStatistics,
+    ) -> Vec<(usize, String)> {
+        let mut outliers = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+
+            if let Ok(num) = value.trim().parse::<f64>() {
+                if stats.is_outlier_iqr(num, self.iqr_multiplier) {
+                    outliers.push((row_idx, value.to_string()));
+                }
+            }
+        }
+
+        outliers
+    }
+
+    fn find_invalid_negative_values(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> Vec<(usize, f64)> {
+        // Column names that should never be negative
+        let non_negative_patterns = [
+            "age", "weight", "height", "bmi", "count", "reads", "read_count",
+            "concentration", "conc", "length", "size", "distance", "duration",
+            "price", "cost", "amount", "quantity", "score", "rating",
+        ];
+
+        let col_lower = col_schema.name.to_lowercase();
+        let should_be_non_negative = non_negative_patterns
+            .iter()
+            .any(|p| col_lower.contains(p));
+
+        if !should_be_non_negative {
+            return Vec::new();
+        }
+
+        let mut negatives = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+
+            if let Ok(num) = value.trim().parse::<f64>() {
+                if num < 0.0 {
+                    negatives.push((row_idx, num));
+                }
+            }
+        }
+
+        negatives
+    }
+}
+
+/// Validates for case variant inconsistencies.
+/// Detects when the same value appears in different cases (e.g., "CD" and "cd").
+pub struct CaseVariantValidator;
+
+impl Validator for CaseVariantValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Only check string/categorical columns
+            if col_schema.inferred_type != ColumnType::String {
+                continue;
+            }
+
+            let case_groups = self.find_case_variant_groups(table, col_schema);
+
+            // Filter to groups that have multiple case variants
+            let problematic_groups: Vec<_> = case_groups
+                .into_iter()
+                .filter(|(_, variants)| variants.len() > 1)
+                .collect();
+
+            if !problematic_groups.is_empty() {
+                let total_affected: usize = problematic_groups
+                    .iter()
+                    .flat_map(|(_, variants)| variants.values())
+                    .sum();
+                let pct = (total_affected as f64 / table.row_count() as f64) * 100.0;
+
+                // Create a description of the case variants
+                let variant_examples: Vec<String> = problematic_groups
+                    .iter()
+                    .take(3)
+                    .map(|(_, variants)| {
+                        let vars: Vec<_> = variants.keys().take(3).cloned().collect();
+                        format!("{:?}", vars)
+                    })
+                    .collect();
+
+                let obs = Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "Case variants detected for {} value(s): {}",
+                        problematic_groups.len(),
+                        variant_examples.join(", ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total_affected)
+                        .with_percentage(pct)
+                        .with_value_counts(Some(json!(
+                            problematic_groups
+                                .iter()
+                                .take(5)
+                                .map(|(canonical, variants)| {
+                                    (canonical.clone(), variants.clone())
+                                })
+                                .collect::<IndexMap<_, _>>()
+                        ))),
+                )
+                .with_confidence(0.90)
+                .with_detector("case_variant_validator");
+
+                observations.push(obs);
+            }
+        }
+
+        observations
+    }
+}
+
+impl CaseVariantValidator {
+    /// Groups values by their lowercase form to find case variants.
+    fn find_case_variant_groups(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> IndexMap<String, IndexMap<String, usize>> {
+        // Map from lowercase -> (original_case -> count)
+        let mut groups: IndexMap<String, IndexMap<String, usize>> = IndexMap::new();
+
+        for value in table.column_values(col_schema.position) {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            let lowercase = trimmed.to_lowercase();
+
+            groups
+                .entry(lowercase)
+                .or_default()
+                .entry(trimmed.to_string())
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
+        }
+
+        groups
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -591,8 +940,11 @@ impl ValidationEngine {
                 Box::new(RangeValidator),
                 Box::new(SetValidator),
                 Box::new(UniquenessValidator),
+                Box::new(IdentifierDuplicateValidator),
+                Box::new(StatisticalOutlierValidator::default()),
                 Box::new(CompletenessValidator::default()),
                 Box::new(ConsistencyValidator),
+                Box::new(CaseVariantValidator),
                 Box::new(MissingPatternValidator::default()),
             ],
         }
