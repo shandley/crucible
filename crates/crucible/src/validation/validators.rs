@@ -926,6 +926,386 @@ impl CaseVariantValidator {
     }
 }
 
+/// Validates for potential typos using edit distance.
+/// Detects when values are very similar to other values (e.g., "stoool" vs "stool").
+pub struct TypoValidator {
+    /// Maximum edit distance to consider as a typo (default: 2).
+    max_distance: usize,
+    /// Minimum string length to check (very short strings have too many false positives).
+    min_length: usize,
+}
+
+impl Default for TypoValidator {
+    fn default() -> Self {
+        Self {
+            max_distance: 2,
+            min_length: 4,
+        }
+    }
+}
+
+impl Validator for TypoValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Only check string columns with expected values (categorical)
+            if col_schema.inferred_type != ColumnType::String {
+                continue;
+            }
+
+            let potential_typos = self.find_potential_typos(table, col_schema);
+
+            if !potential_typos.is_empty() {
+                let count: usize = potential_typos.values().map(|(_, c)| c).sum();
+                let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+                // Format typo suggestions
+                let typo_examples: Vec<String> = potential_typos
+                    .iter()
+                    .take(3)
+                    .map(|(typo, (suggestion, _))| format!("'{}' → '{}'", typo, suggestion))
+                    .collect();
+
+                let obs = Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "{} potential typo(s) detected: {}",
+                        potential_typos.len(),
+                        typo_examples.join(", ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_value_counts(Some(json!(
+                            potential_typos
+                                .iter()
+                                .map(|(typo, (suggestion, count))| {
+                                    (typo.clone(), json!({"suggestion": suggestion, "count": count}))
+                                })
+                                .collect::<IndexMap<_, _>>()
+                        ))),
+                )
+                .with_confidence(0.75)
+                .with_detector("typo_validator");
+
+                observations.push(obs);
+            }
+        }
+
+        observations
+    }
+}
+
+impl TypoValidator {
+    /// Find values that appear to be typos of more common values.
+    fn find_potential_typos(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> IndexMap<String, (String, usize)> {
+        // Count all values
+        let mut value_counts: IndexMap<String, usize> = IndexMap::new();
+        for value in table.column_values(col_schema.position) {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+            let trimmed = value.trim().to_string();
+            if !trimmed.is_empty() {
+                *value_counts.entry(trimmed).or_insert(0) += 1;
+            }
+        }
+
+        // Find rare values that are close to common values
+        let mut potential_typos: IndexMap<String, (String, usize)> = IndexMap::new();
+
+        // Sort by count descending to identify "canonical" values
+        let mut sorted_values: Vec<_> = value_counts.iter().collect();
+        sorted_values.sort_by(|a, b| b.1.cmp(a.1));
+
+        // Common values are those appearing more than once
+        let common_values: Vec<&String> = sorted_values
+            .iter()
+            .filter(|(_, count)| **count > 1)
+            .map(|(val, _)| *val)
+            .collect();
+
+        // Check rare values (count == 1) against common values
+        for (rare_value, count) in &value_counts {
+            if *count > 1 || rare_value.len() < self.min_length {
+                continue;
+            }
+
+            for common_value in &common_values {
+                if common_value.len() < self.min_length {
+                    continue;
+                }
+
+                let distance = levenshtein_distance(rare_value, common_value);
+
+                // Only flag if distance is small relative to string length
+                // and the strings are reasonably similar
+                if distance > 0
+                    && distance <= self.max_distance
+                    && distance < rare_value.len() / 2
+                {
+                    potential_typos.insert(
+                        rare_value.clone(),
+                        ((*common_value).clone(), *count),
+                    );
+                    break; // Only suggest one correction per typo
+                }
+            }
+        }
+
+        potential_typos
+    }
+}
+
+/// Calculate Levenshtein (edit) distance between two strings.
+fn levenshtein_distance(s1: &str, s2: &str) -> usize {
+    let s1_chars: Vec<char> = s1.chars().collect();
+    let s2_chars: Vec<char> = s2.chars().collect();
+    let len1 = s1_chars.len();
+    let len2 = s2_chars.len();
+
+    // Early exits
+    if len1 == 0 {
+        return len2;
+    }
+    if len2 == 0 {
+        return len1;
+    }
+
+    // Create distance matrix
+    let mut matrix: Vec<Vec<usize>> = vec![vec![0; len2 + 1]; len1 + 1];
+
+    // Initialize first column
+    for i in 0..=len1 {
+        matrix[i][0] = i;
+    }
+
+    // Initialize first row
+    for j in 0..=len2 {
+        matrix[0][j] = j;
+    }
+
+    // Fill in the rest of the matrix
+    for i in 1..=len1 {
+        for j in 1..=len2 {
+            let cost = if s1_chars[i - 1] == s2_chars[j - 1] {
+                0
+            } else {
+                1
+            };
+
+            matrix[i][j] = (matrix[i - 1][j] + 1) // deletion
+                .min(matrix[i][j - 1] + 1) // insertion
+                .min(matrix[i - 1][j - 1] + cost); // substitution
+        }
+    }
+
+    matrix[len1][len2]
+}
+
+/// Validates for semantic equivalents (synonyms).
+/// Detects when values represent the same concept with different names.
+pub struct SemanticEquivalenceValidator {
+    /// Known synonym groups for biomedical terms.
+    synonym_groups: Vec<Vec<&'static str>>,
+}
+
+impl Default for SemanticEquivalenceValidator {
+    fn default() -> Self {
+        Self {
+            synonym_groups: vec![
+                // Disease names
+                vec!["CD", "Crohn's", "Crohns", "Crohn's Disease", "Crohn Disease"],
+                vec!["UC", "Ulcerative Colitis", "ulcerative colitis"],
+                vec!["IBD", "Inflammatory Bowel Disease"],
+                vec!["T2D", "Type 2 Diabetes", "Type II Diabetes", "Diabetes Mellitus Type 2"],
+                vec!["T1D", "Type 1 Diabetes", "Type I Diabetes", "Diabetes Mellitus Type 1"],
+                vec!["HTN", "Hypertension", "High Blood Pressure"],
+                vec!["MI", "Myocardial Infarction", "Heart Attack"],
+                vec!["CVD", "Cardiovascular Disease"],
+                vec!["COPD", "Chronic Obstructive Pulmonary Disease"],
+                vec!["CKD", "Chronic Kidney Disease"],
+                vec!["HF", "Heart Failure", "CHF", "Congestive Heart Failure"],
+
+                // Sample types
+                vec!["stool", "feces", "fecal", "faeces", "faecal"],
+                vec!["gut", "intestine", "intestinal", "GI", "gastrointestinal"],
+                vec!["blood", "serum", "plasma"],
+                vec!["urine", "urinary"],
+                vec!["saliva", "oral", "buccal"],
+                vec!["biopsy", "tissue"],
+
+                // Sex/Gender
+                vec!["M", "Male", "male", "man", "Man"],
+                vec!["F", "Female", "female", "woman", "Woman"],
+
+                // Boolean-like
+                vec!["yes", "Yes", "YES", "Y", "y", "true", "True", "TRUE", "1"],
+                vec!["no", "No", "NO", "N", "n", "false", "False", "FALSE", "0"],
+
+                // Treatment status
+                vec!["control", "Control", "healthy", "Healthy", "normal", "Normal"],
+                vec!["treated", "treatment", "Treatment", "drug", "Drug"],
+                vec!["placebo", "Placebo", "vehicle", "Vehicle"],
+
+                // Response status
+                vec!["responder", "Responder", "response", "Response", "R"],
+                vec!["non-responder", "Non-responder", "nonresponder", "Nonresponder", "NR", "no response"],
+                vec!["partial", "Partial", "partial response", "PR"],
+
+                // Severity
+                vec!["mild", "Mild", "low", "Low"],
+                vec!["moderate", "Moderate", "medium", "Medium"],
+                vec!["severe", "Severe", "high", "High"],
+
+                // Activity status
+                vec!["active", "Active", "flare", "Flare"],
+                vec!["inactive", "Inactive", "remission", "Remission", "quiescent"],
+
+                // Smoking status
+                vec!["never", "Never", "non-smoker", "Non-smoker", "nonsmoker"],
+                vec!["former", "Former", "ex-smoker", "Ex-smoker", "past"],
+                vec!["current", "Current", "smoker", "Smoker", "active smoker"],
+
+                // Treatment types
+                vec!["chemotherapy", "Chemotherapy", "chemo", "Chemo"],
+                vec!["radiation", "Radiation", "radiotherapy", "Radiotherapy", "RT"],
+                vec!["surgery", "Surgery", "surgical", "Surgical"],
+                vec!["immunotherapy", "Immunotherapy", "immuno"],
+            ],
+        }
+    }
+}
+
+impl Validator for SemanticEquivalenceValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Only check string columns
+            if col_schema.inferred_type != ColumnType::String {
+                continue;
+            }
+
+            let equivalent_groups = self.find_semantic_equivalents(table, col_schema);
+
+            if !equivalent_groups.is_empty() {
+                let total_affected: usize = equivalent_groups
+                    .iter()
+                    .flat_map(|(_, variants)| variants.values())
+                    .sum();
+                let pct = (total_affected as f64 / table.row_count() as f64) * 100.0;
+
+                // Format examples
+                let examples: Vec<String> = equivalent_groups
+                    .iter()
+                    .take(3)
+                    .map(|(canonical, variants)| {
+                        let vars: Vec<_> = variants.keys().take(3).cloned().collect();
+                        format!("{:?} (same as '{}')", vars, canonical)
+                    })
+                    .collect();
+
+                let obs = Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "{} semantic equivalent group(s) detected: {}",
+                        equivalent_groups.len(),
+                        examples.join("; ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total_affected)
+                        .with_percentage(pct)
+                        .with_value_counts(Some(json!(
+                            equivalent_groups
+                                .iter()
+                                .take(5)
+                                .map(|(canonical, variants)| {
+                                    (canonical.clone(), variants.clone())
+                                })
+                                .collect::<IndexMap<_, _>>()
+                        ))),
+                )
+                .with_confidence(0.85)
+                .with_detector("semantic_equivalence_validator");
+
+                observations.push(obs);
+            }
+        }
+
+        observations
+    }
+}
+
+impl SemanticEquivalenceValidator {
+    /// Find values that are semantic equivalents (synonyms).
+    fn find_semantic_equivalents(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> IndexMap<String, IndexMap<String, usize>> {
+        // Collect all unique values with counts
+        let mut value_counts: IndexMap<String, usize> = IndexMap::new();
+        for value in table.column_values(col_schema.position) {
+            if DataTable::is_null_value(value) {
+                continue;
+            }
+            let trimmed = value.trim().to_string();
+            if !trimmed.is_empty() {
+                *value_counts.entry(trimmed).or_insert(0) += 1;
+            }
+        }
+
+        // Map values to their canonical form
+        let mut canonical_map: IndexMap<String, String> = IndexMap::new();
+        for value in value_counts.keys() {
+            for group in &self.synonym_groups {
+                // Case-insensitive matching
+                let value_lower = value.to_lowercase();
+                for &synonym in group {
+                    if value_lower == synonym.to_lowercase() {
+                        // Use the first item in the group as canonical
+                        canonical_map.insert(value.clone(), group[0].to_string());
+                        break;
+                    }
+                }
+                if canonical_map.contains_key(value) {
+                    break;
+                }
+            }
+        }
+
+        // Group values by canonical form
+        let mut groups: IndexMap<String, IndexMap<String, usize>> = IndexMap::new();
+        for (value, count) in &value_counts {
+            if let Some(canonical) = canonical_map.get(value) {
+                groups
+                    .entry(canonical.clone())
+                    .or_default()
+                    .insert(value.clone(), *count);
+            }
+        }
+
+        // Only keep groups with multiple variants
+        groups.retain(|_, variants| variants.len() > 1);
+
+        groups
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -945,6 +1325,8 @@ impl ValidationEngine {
                 Box::new(CompletenessValidator::default()),
                 Box::new(ConsistencyValidator),
                 Box::new(CaseVariantValidator),
+                Box::new(TypoValidator::default()),
+                Box::new(SemanticEquivalenceValidator::default()),
                 Box::new(MissingPatternValidator::default()),
             ],
         }
