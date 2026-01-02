@@ -1,0 +1,47 @@
+//! Axum application setup.
+
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use tower_http::cors::{Any, CorsLayer};
+
+use super::handlers;
+use super::state::AppState;
+
+/// Create the Axum router with all routes.
+pub fn create_router(state: AppState) -> Router {
+    // CORS configuration for local development
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    // API routes
+    let api_routes = Router::new()
+        // Curation layer
+        .route("/curation", get(handlers::get_curation))
+        .route("/save", post(handlers::save_curation))
+        // Decisions
+        .route("/decisions/{id}/accept", post(handlers::accept_decision))
+        .route("/decisions/{id}/reject", post(handlers::reject_decision))
+        .route("/decisions/{id}/modify", post(handlers::modify_decision));
+
+    Router::new()
+        .nest("/api", api_routes)
+        .layer(cors)
+        .with_state(state)
+}
+
+/// Start the web server.
+pub async fn run_server(state: AppState, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+    let app = create_router(state);
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+
+    println!("Server listening on http://{}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}

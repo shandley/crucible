@@ -1,0 +1,36 @@
+[package]
+name = "crucible-cli"
+version.workspace = true
+edition.workspace = true
+description = "CLI for Crucible data curation tool"
+license = "MIT"
+
+[[bin]]
+name = "crucible"
+path = "src/main.rs"
+
+[dependencies]
+# Core library
+crucible = { path = "../crucible" }
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# Web server
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Static file embedding
+rust-embed = { version = "8.2", features = ["interpolate-folder-path"] }
+mime_guess = "2.0"
+
+# Utilities
+open = "5.0"
+colored = "2.1"
+ctrlc = "3.4"
