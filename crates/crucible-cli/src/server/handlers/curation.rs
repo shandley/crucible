@@ -1,9 +1,9 @@
 //! Curation layer handlers.
 
 use axum::{extract::State, Json};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-use crucible::{DecisionStatus, Observation, Severity, Suggestion, SuggestionAction};
+use crucible::DecisionStatus;
 
 use crate::server::error::ApiError;
 use crate::server::state::AppState;

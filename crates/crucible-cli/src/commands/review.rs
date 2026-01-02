@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
-use crucible::{ContextHints, Crucible, CurationContext, CurationLayer, MockProvider};
+use crucible::{Crucible, CurationContext, CurationLayer, MockProvider};
 
 use crate::server::{app, state::AppState};
 

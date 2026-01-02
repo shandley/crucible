@@ -8,6 +8,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 use super::handlers;
 use super::state::AppState;
+use crate::web::static_handler;
 
 /// Create the Axum router with all routes.
 pub fn create_router(state: AppState) -> Router {
@@ -23,12 +24,13 @@ pub fn create_router(state: AppState) -> Router {
         .route("/curation", get(handlers::get_curation))
         .route("/save", post(handlers::save_curation))
         // Decisions
-        .route("/decisions/{id}/accept", post(handlers::accept_decision))
-        .route("/decisions/{id}/reject", post(handlers::reject_decision))
-        .route("/decisions/{id}/modify", post(handlers::modify_decision));
+        .route("/decisions/:id/accept", post(handlers::accept_decision))
+        .route("/decisions/:id/reject", post(handlers::reject_decision))
+        .route("/decisions/:id/modify", post(handlers::modify_decision));
 
     Router::new()
         .nest("/api", api_routes)
+        .fallback(static_handler)
         .layer(cors)
         .with_state(state)
 }

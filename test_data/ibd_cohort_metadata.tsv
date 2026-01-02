@@ -1,21 +1,9 @@
-sample_id	subject_id	diagnosis	age	sex	bmi	antibiotics_use	disease_activity	collection_date	sample_type	sequencing_batch
-IBD001	SUBJ_001	CD	34	M	24.5	yes	active	2024-01-15	stool	batch_1
-IBD002	SUBJ_002	UC	28	F	22.1	no	inactive	2024-01-16	stool	batch_1
-IBD003	SUBJ_003	Crohn's	45	male	27.8	Yes	Active	01/17/2024	Stool	batch_1
-IBD004	SUBJ_004	Control	32	F	23.4	FALSE	NA	2024-01-18	stool	batch_1
-IBD005	SUBJ_005	cd	29	m	missing	TRUE	moderate	2024-01-19	stool	batch_2
-IBD006	SUBJ_006	ulcerative colitis	38	Female	26.2	n	inactive	Jan 20, 2024	stool	batch_2
-IBD007	SUBJ_007	CD	52	M	31.5	0	severe	2024-01-21	stool	batch_2
-IBD008	SUBJ_008	UC	41	f	N/A	1	mild	2024-01-22	stool	batch_2
-IBD009	SUBJ_009	control	36		24.8	no	not applicable	2024-01-23	stool	batch_2
-IBD010	SUBJ_010	CD	27	M	21.9	yes	active	2024-01-24	stool	batch_3
-IBD011	SUBJ_011	UC	33	F	25.3	No	Inactive	2024/01/25	stool	batch_3
-IBD012	SUBJ_012	CD	48	M	28.7	y	active	2024-01-26	stool	batch_3
-IBD001	SUBJ_013	UC	31	F	23.1	no	mild	2024-01-27	stool	batch_3
-IBD014	SUBJ_014	Crohns	44	M	-5.2	yes	moderate	2024-01-28	stool	batch_3
-IBD015	SUBJ_015	CD	39	F	24.6	FALSE	active	2024-01-29	Stool	batch_4
-IBD016	SUBJ_016	healthy control	55	M	26.8	no		2024-01-30	stool	batch_4
-IBD017	SUBJ_017	CD	242	F	22.4	TRUE	severe	2024-01-31	stool	batch_4
-IBD018	SUBJ_018	UC	35	M	25.1	no	inactive	2024-02-01	stoool	batch_4
-IBD019	SUBJ_019	CD	.	F	23.8	yes	active	2024-02-02	stool	batch_4
-IBD020	SUBJ_020	control	29	Unknown	24.2	NULL	N/A	2024-02-03	stool	batch_4
+sample_id	diagnosis	age	bmi	treatment	visit_date
+IBD001	CD	45	23.5	Infliximab	2024-01-15
+IBD002	Crohn's	52	27.1	adalimumab	2024/02/20
+IBD003	cd	38	21.8	Infliximab	15-Mar-2024
+IBD004	UC	41	24.2	Vedolizumab	2024-04-10
+IBD005	ulcerative colitis	29	-5.2	mesalamine	April 5, 2024
+IBD006	CD	55	26.8	Ustekinumab	2024-05-22
+IBD007	Crohns	44	22.9	infliximab	2024-06-18
+IBD008	UC	33	28.5	Vedolizumab	2024-07-03

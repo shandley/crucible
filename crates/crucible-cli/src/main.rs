@@ -3,6 +3,7 @@
 mod cli;
 mod commands;
 mod server;
+mod web;
 
 use clap::Parser;
 use cli::{Cli, Commands};
