@@ -7,8 +7,8 @@ Development is organized into phases, each producing a usable artifact. The LLM 
 ```
 Phase 1: Foundation        [Core types, basic inference, no LLM]        ✅ COMPLETE
 Phase 2: LLM Integration   [LLM-enhanced inference and suggestions]     ✅ COMPLETE
-Phase 3: Curation Layer    [Full spec implementation, persistence]      ← NEXT
-Phase 4: Application       [Export, CLI, audit trail]
+Phase 3: Curation Layer    [Full spec implementation, persistence]      ✅ COMPLETE
+Phase 4: Application       [Export, CLI, audit trail]                   ← NEXT
 Phase 5: Python Bindings   [PyO3, pip package]
 Phase 6: Polish            [Documentation, testing, optimization]
 ```
@@ -119,55 +119,62 @@ Key prompts to design:
 
 ---
 
-## Phase 3: Curation Layer
+## Phase 3: Curation Layer ✅ COMPLETE
 
 **Goal**: Full curation layer spec implementation with persistence.
 
 ### Deliverables
 
-- [ ] Full curation layer struct matching spec
-  - [ ] Source metadata
-  - [ ] Context
-  - [ ] Schema
-  - [ ] Observations
-  - [ ] Suggestions
-  - [ ] Decisions
-  - [ ] Summary
-- [ ] JSON serialization/deserialization
-  - [ ] serde integration
-  - [ ] Schema validation
-- [ ] Decision tracking
-  - [ ] Accept/reject/modify suggestions
-  - [ ] Decision audit trail
-  - [ ] User attribution
-- [ ] Curation layer persistence
-  - [ ] Save to `.curation.json`
-  - [ ] Load and continue curation
-  - [ ] History/versioning
+- [x] Full curation layer struct matching spec
+  - [x] Source metadata
+  - [x] Context (CurationContext with hints, file_context, inference_config)
+  - [x] Schema
+  - [x] Observations
+  - [x] Suggestions
+  - [x] Decisions (Decision struct with DecisionStatus)
+  - [x] Summary (CurationSummary with SuggestionCounts)
+- [x] JSON serialization/deserialization
+  - [x] serde integration
+  - [x] Schema validation
+- [x] Decision tracking
+  - [x] Accept/reject/modify suggestions
+  - [x] Decision audit trail
+  - [x] User attribution (decided_by, decided_at)
+- [x] Curation layer persistence
+  - [x] Save to `.curation.json`
+  - [x] Load and continue curation
+  - [x] History/versioning (save_with_history, list_history)
 
 ### Exit Criteria
 
 ```rust
 let crucible = Crucible::new().with_llm(provider);
-let curation = crucible.analyze("metadata.tsv")?;
+let result = crucible.analyze("metadata.tsv")?;
+
+let mut curation = CurationLayer::from_analysis(
+    result,
+    CurationContext::new().with_domain("biomedical")
+);
 
 // Review and decide
 curation.accept("sug_001")?;
 curation.reject("sug_002", "Not applicable")?;
-curation.modify("sug_003", modifications)?;
+curation.modify("sug_003", json!({"mapping": {"": "unknown"}}), "Changed null handling")?;
 
 // Persist
 curation.save("metadata.curation.json")?;
 
 // Later, load and continue
 let curation = CurationLayer::load("metadata.curation.json")?;
+println!("Pending: {}", curation.pending_suggestions().len());
 ```
 
-### Estimated Scope
+### Actual Scope
 
-- ~8 additional source files
-- ~1000-1500 lines of Rust
-- Round-trip serialization tests
+- 6 new source files in `src/curation/`
+- ~1000 lines of Rust
+- 30 integration tests
+- 113 total tests (all passing)
 
 ---
 

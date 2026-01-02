@@ -42,6 +42,14 @@ pub enum CrucibleError {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    /// Validation or constraint error.
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    /// Persistence error (save/load).
+    #[error("Persistence error: {0}")]
+    Persistence(String),
+
     /// JSON serialization/deserialization error.
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),

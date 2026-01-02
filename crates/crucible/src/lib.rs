@@ -47,7 +47,32 @@
 //!     println!("{:?}: {}", suggestion.action, suggestion.rationale);
 //! }
 //! ```
+//!
+//! # Curation Layer
+//!
+//! ```no_run
+//! use crucible::{Crucible, MockProvider};
+//! use crucible::curation::{CurationLayer, CurationContext};
+//!
+//! // Analyze and create curation layer
+//! let crucible = Crucible::new().with_llm(MockProvider::new());
+//! let result = crucible.analyze("metadata.tsv").unwrap();
+//!
+//! let mut curation = CurationLayer::from_analysis(
+//!     result,
+//!     CurationContext::new().with_domain("biomedical")
+//! );
+//!
+//! // Review and decide
+//! curation.accept("sug_001").unwrap();
+//! curation.reject("sug_002", "Not applicable").unwrap();
+//!
+//! // Persist and reload
+//! curation.save("metadata.curation.json").unwrap();
+//! let loaded = CurationLayer::load("metadata.curation.json").unwrap();
+//! ```
 
+pub mod curation;
 pub mod error;
 pub mod inference;
 pub mod input;
@@ -59,6 +84,7 @@ pub mod validation;
 mod crucible;
 
 pub use crate::crucible::{AnalysisResult, Crucible, CrucibleConfig};
+pub use curation::{CurationContext, CurationLayer, Decision, DecisionStatus};
 pub use error::{CrucibleError, Result};
 pub use input::{ContextHints, DataTable, SourceMetadata};
 pub use llm::{AnthropicProvider, LlmConfig, LlmProvider, MockProvider, SchemaEnhancement};
