@@ -23,6 +23,8 @@ pub fn create_router(state: AppState) -> Router {
         // Curation layer
         .route("/curation", get(handlers::get_curation))
         .route("/save", post(handlers::save_curation))
+        // Data preview
+        .route("/data", get(handlers::get_data_preview))
         // Decisions
         .route("/decisions/:id/accept", post(handlers::accept_decision))
         .route("/decisions/:id/reject", post(handlers::reject_decision))

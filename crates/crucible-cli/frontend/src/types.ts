@@ -19,6 +19,15 @@ export interface SchemaInfo {
   columns: ColumnInfo[]
 }
 
+export interface ObservationEvidence {
+  sample_rows?: number[]
+  occurrences?: number
+  percentage?: number
+  value_counts?: Record<string, Record<string, number>>
+  pattern?: string
+  expected?: Record<string, unknown>
+}
+
 export interface ObservationInfo {
   id: string
   type: string
@@ -26,7 +35,7 @@ export interface ObservationInfo {
   column: string
   description: string
   confidence: number
-  evidence: unknown
+  evidence: ObservationEvidence
 }
 
 export interface SuggestionInfo {
@@ -89,4 +98,11 @@ export interface DecisionResponse {
 export interface SaveResponse {
   success: boolean
   path: string
+}
+
+export interface DataPreviewResponse {
+  headers: string[]
+  rows: string[][]
+  total_rows: number
+  truncated: boolean
 }

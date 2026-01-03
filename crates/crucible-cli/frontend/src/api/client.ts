@@ -1,4 +1,4 @@
-import type { CurationResponse, DecisionResponse, SaveResponse } from '../types'
+import type { CurationResponse, DataPreviewResponse, DecisionResponse, SaveResponse } from '../types'
 
 const API_BASE = '/api'
 
@@ -58,4 +58,8 @@ export async function modifyDecision(
 
 export async function saveCuration(): Promise<SaveResponse> {
   return fetchApi<SaveResponse>('/save', { method: 'POST' })
+}
+
+export async function getDataPreview(): Promise<DataPreviewResponse> {
+  return fetchApi<DataPreviewResponse>('/data')
 }

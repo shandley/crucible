@@ -1,6 +1,7 @@
 export { Badge } from './Badge'
 export { Button } from './Button'
 export { Card, CardHeader, CardContent, CardFooter } from './Card'
+export { DataPreview } from './DataPreview'
 export { Progress } from './Progress'
 export { SuggestionCard } from './SuggestionCard'
 export { StatusBar } from './StatusBar'

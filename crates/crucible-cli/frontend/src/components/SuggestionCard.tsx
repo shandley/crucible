@@ -8,6 +8,7 @@ import { cn } from '../lib/utils'
 interface SuggestionCardProps {
   suggestion: SuggestionInfo
   decision?: DecisionInfo
+  isSelected?: boolean
   onAccept: (notes?: string) => void
   onReject: (notes: string) => void
 }
@@ -26,6 +27,7 @@ const actionColors: Record<string, 'default' | 'warning' | 'destructive' | 'succ
 export function SuggestionCard({
   suggestion,
   decision,
+  isSelected = false,
   onAccept,
   onReject,
 }: SuggestionCardProps) {
@@ -41,6 +43,7 @@ export function SuggestionCard({
       className={cn({
         'border-success/50 bg-success/5': isAccepted,
         'border-destructive/50 bg-destructive/5': isRejected,
+        'ring-2 ring-primary ring-offset-2': isSelected,
       })}
     >
       <CardHeader>
