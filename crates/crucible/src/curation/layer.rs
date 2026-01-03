@@ -318,6 +318,25 @@ impl CurationLayer {
             .find(|d| d.suggestion_id == suggestion_id)
     }
 
+    /// Reset a decision, removing it and returning the suggestion to pending status.
+    /// Returns the removed decision, or None if no decision existed.
+    pub fn reset(&mut self, suggestion_id: &str) -> Result<Option<Decision>> {
+        self.validate_suggestion_exists(suggestion_id)?;
+
+        let position = self
+            .decisions
+            .iter()
+            .position(|d| d.suggestion_id == suggestion_id);
+
+        let removed = position.map(|pos| self.decisions.remove(pos));
+
+        if removed.is_some() {
+            self.touch();
+        }
+
+        Ok(removed)
+    }
+
     /// Get a suggestion by ID.
     pub fn suggestion(&self, suggestion_id: &str) -> Option<&Suggestion> {
         self.suggestions.iter().find(|s| s.id == suggestion_id)

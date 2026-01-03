@@ -213,6 +213,47 @@ pub async fn modify_decision(
     Ok(Json(response))
 }
 
+/// Response after resetting a decision.
+#[derive(Serialize)]
+pub struct ResetResponse {
+    pub suggestion_id: String,
+    pub was_reset: bool,
+    pub previous_status: Option<String>,
+}
+
+/// POST /api/decisions/:id/reset
+pub async fn reset_decision(
+    State(state): State<AppState>,
+    Path(suggestion_id): Path<String>,
+) -> Result<Json<ResetResponse>, ApiError> {
+    let mut curation = state.curation.write().await;
+
+    // Verify suggestion exists
+    if curation.suggestion(&suggestion_id).is_none() {
+        return Err(ApiError::NotFound(format!(
+            "Suggestion not found: {}",
+            suggestion_id
+        )));
+    }
+
+    // Reset the decision
+    let removed = curation.reset(&suggestion_id)?;
+
+    let response = ResetResponse {
+        suggestion_id: suggestion_id.clone(),
+        was_reset: removed.is_some(),
+        previous_status: removed.map(|d| format!("{:?}", d.status).to_lowercase()),
+    };
+
+    // Auto-save if enabled
+    if state.auto_save && response.was_reset {
+        drop(curation);
+        state.save().await?;
+    }
+
+    Ok(Json(response))
+}
+
 /// POST /api/batch/accept
 pub async fn batch_accept(
     State(state): State<AppState>,

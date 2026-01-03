@@ -56,6 +56,18 @@ export async function modifyDecision(
   })
 }
 
+export interface ResetResponse {
+  suggestion_id: string
+  was_reset: boolean
+  previous_status: string | null
+}
+
+export async function resetDecision(id: string): Promise<ResetResponse> {
+  return fetchApi<ResetResponse>(`/decisions/${id}/reset`, {
+    method: 'POST',
+  })
+}
+
 export async function saveCuration(): Promise<SaveResponse> {
   return fetchApi<SaveResponse>('/save', { method: 'POST' })
 }

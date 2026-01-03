@@ -1,9 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCuration, getDataPreview, acceptDecision, rejectDecision, saveCuration, batchAccept, batchReject } from './api/client'
+import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject } from './api/client'
 import type { BatchRequest } from './api/client'
 import { SuggestionCard, StatusBar, Button, DataPreview } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
+
+/** An action that can be undone/redone */
+interface UndoableAction {
+  suggestionId: string
+  type: 'accept' | 'reject'
+  notes?: string
+}
 
 function findDecision(decisions: DecisionInfo[], suggestionId: string): DecisionInfo | undefined {
   return decisions.find(d => d.suggestion_id === suggestionId)
@@ -68,6 +75,8 @@ function isPending(decisions: DecisionInfo[], suggestion: SuggestionInfo): boole
 export default function App() {
   const queryClient = useQueryClient()
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
+  const [undoStack, setUndoStack] = useState<UndoableAction[]>([])
+  const [redoStack, setRedoStack] = useState<UndoableAction[]>([])
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -82,14 +91,27 @@ export default function App() {
   const acceptMutation = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
       acceptDecision(id, notes),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
+      // Push to undo stack, clear redo stack
+      setUndoStack(prev => [...prev, { suggestionId: variables.id, type: 'accept', notes: variables.notes }])
+      setRedoStack([])
     },
   })
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes: string }) =>
       rejectDecision(id, notes),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['curation'] })
+      // Push to undo stack, clear redo stack
+      setUndoStack(prev => [...prev, { suggestionId: variables.id, type: 'reject', notes: variables.notes }])
+      setRedoStack([])
+    },
+  })
+
+  const resetMutation = useMutation({
+    mutationFn: (id: string) => resetDecision(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
     },
@@ -103,6 +125,9 @@ export default function App() {
     mutationFn: (request: BatchRequest) => batchAccept(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
+      // Clear undo/redo stacks for batch operations
+      setUndoStack([])
+      setRedoStack([])
     },
   })
 
@@ -110,8 +135,62 @@ export default function App() {
     mutationFn: (request: BatchRequest) => batchReject(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
+      // Clear undo/redo stacks for batch operations
+      setUndoStack([])
+      setRedoStack([])
     },
   })
+
+  // Undo the last action
+  const handleUndo = useCallback(async () => {
+    if (undoStack.length === 0) return
+
+    const lastAction = undoStack[undoStack.length - 1]
+
+    // Reset the decision
+    await resetMutation.mutateAsync(lastAction.suggestionId)
+
+    // Move from undo to redo stack
+    setUndoStack(prev => prev.slice(0, -1))
+    setRedoStack(prev => [...prev, lastAction])
+  }, [undoStack, resetMutation])
+
+  // Redo the last undone action
+  const handleRedo = useCallback(async () => {
+    if (redoStack.length === 0) return
+
+    const lastAction = redoStack[redoStack.length - 1]
+
+    // Re-apply the decision
+    if (lastAction.type === 'accept') {
+      await acceptDecision(lastAction.suggestionId, lastAction.notes)
+    } else {
+      await rejectDecision(lastAction.suggestionId, lastAction.notes || 'Rejected')
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['curation'] })
+
+    // Move from redo to undo stack
+    setRedoStack(prev => prev.slice(0, -1))
+    setUndoStack(prev => [...prev, lastAction])
+  }, [redoStack, queryClient])
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          handleRedo()
+        } else {
+          handleUndo()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleUndo, handleRedo])
 
   // Get highlighted rows and column based on selected suggestion
   const { highlightedRows, highlightedColumn } = useMemo(() => {
@@ -187,6 +266,26 @@ export default function App() {
                 : 'All suggestions reviewed'}
             </h2>
             <div className="flex items-center gap-2">
+              {/* Undo/Redo buttons */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUndo}
+                disabled={undoStack.length === 0 || resetMutation.isPending}
+                title="Undo last decision (Ctrl+Z)"
+              >
+                Undo
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRedo}
+                disabled={redoStack.length === 0}
+                title="Redo last undone decision (Ctrl+Shift+Z)"
+              >
+                Redo
+              </Button>
+              <div className="mx-1 h-4 w-px bg-border" />
               {curation.summary.pending_count > 0 && (
                 <>
                   <Button
@@ -198,7 +297,7 @@ export default function App() {
                     {batchAcceptMutation.isPending ? 'Accepting...' : 'Accept All'}
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     onClick={() => batchRejectMutation.mutate({ all: true, notes: 'Batch rejected' })}
                     disabled={batchRejectMutation.isPending}
