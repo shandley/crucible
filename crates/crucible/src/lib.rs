@@ -72,6 +72,7 @@
 //! let loaded = CurationLayer::load("metadata.curation.json").unwrap();
 //! ```
 
+pub mod bio;
 pub mod curation;
 pub mod error;
 pub mod inference;
