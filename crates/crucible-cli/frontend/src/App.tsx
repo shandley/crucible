@@ -72,12 +72,27 @@ function isPending(decisions: DecisionInfo[], suggestion: SuggestionInfo): boole
   return !decision || decision.status === 'pending'
 }
 
+/** Format a timestamp as a relative time string */
+function formatRelativeTime(isoString: string): string {
+  const date = new Date(isoString)
+  const now = new Date()
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffSeconds < 5) return 'just now'
+  if (diffSeconds < 60) return `${diffSeconds}s ago`
+  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`
+  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`
+  return date.toLocaleDateString()
+}
+
 export default function App() {
   const queryClient = useQueryClient()
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
   const [undoStack, setUndoStack] = useState<UndoableAction[]>([])
   const [redoStack, setRedoStack] = useState<UndoableAction[]>([])
   const [columnFilter, setColumnFilter] = useState<string>('all')
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [, setTick] = useState(0) // Force re-render for relative time updates
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -97,6 +112,8 @@ export default function App() {
       // Push to undo stack, clear redo stack
       setUndoStack(prev => [...prev, { suggestionId: variables.id, type: 'accept', notes: variables.notes }])
       setRedoStack([])
+      // Update saved timestamp (auto-save happens on backend)
+      setLastSavedAt(new Date().toISOString())
     },
   })
 
@@ -108,6 +125,8 @@ export default function App() {
       // Push to undo stack, clear redo stack
       setUndoStack(prev => [...prev, { suggestionId: variables.id, type: 'reject', notes: variables.notes }])
       setRedoStack([])
+      // Update saved timestamp (auto-save happens on backend)
+      setLastSavedAt(new Date().toISOString())
     },
   })
 
@@ -115,12 +134,32 @@ export default function App() {
     mutationFn: (id: string) => resetDecision(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
+      // Update saved timestamp (auto-save happens on backend)
+      setLastSavedAt(new Date().toISOString())
     },
   })
 
   const saveMutation = useMutation({
     mutationFn: saveCuration,
+    onSuccess: (data) => {
+      setLastSavedAt(data.saved_at)
+    },
   })
+
+  // Initialize lastSavedAt from curation data
+  useEffect(() => {
+    if (curation?.updated_at && !lastSavedAt) {
+      setLastSavedAt(curation.updated_at)
+    }
+  }, [curation?.updated_at, lastSavedAt])
+
+  // Update relative time display every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const batchAcceptMutation = useMutation({
     mutationFn: (request: BatchRequest) => batchAccept(request),
@@ -129,6 +168,8 @@ export default function App() {
       // Clear undo/redo stacks for batch operations
       setUndoStack([])
       setRedoStack([])
+      // Update saved timestamp (auto-save happens on backend)
+      setLastSavedAt(new Date().toISOString())
     },
   })
 
@@ -139,6 +180,8 @@ export default function App() {
       // Clear undo/redo stacks for batch operations
       setUndoStack([])
       setRedoStack([])
+      // Update saved timestamp (auto-save happens on backend)
+      setLastSavedAt(new Date().toISOString())
     },
   })
 
@@ -355,14 +398,21 @@ export default function App() {
                   </Button>
                 </>
               )}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending}
-              >
-                {saveMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {lastSavedAt && (
+                  <span className="text-xs text-muted-foreground" title={`Last saved: ${new Date(lastSavedAt).toLocaleString()}`}>
+                    Saved {formatRelativeTime(lastSavedAt)}
+                  </span>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => saveMutation.mutate()}
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
             </div>
           </div>
 

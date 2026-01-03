@@ -18,6 +18,7 @@ pub struct CurationResponse {
     pub decisions: Vec<DecisionInfo>,
     pub summary: SummaryInfo,
     pub progress: f64,
+    pub updated_at: String,
 }
 
 #[derive(Serialize)]
@@ -186,6 +187,7 @@ pub async fn get_curation(State(state): State<AppState>) -> Result<Json<Curation
                 .count(),
         },
         progress: curation.progress(),
+        updated_at: curation.updated_at.to_rfc3339(),
     };
 
     Ok(Json(response))
@@ -197,6 +199,7 @@ pub async fn save_curation(State(state): State<AppState>) -> Result<Json<SaveRes
     Ok(Json(SaveResponse {
         success: true,
         path: state.curation_path.display().to_string(),
+        saved_at: chrono::Utc::now().to_rfc3339(),
     }))
 }
 
@@ -204,4 +207,5 @@ pub async fn save_curation(State(state): State<AppState>) -> Result<Json<SaveRes
 pub struct SaveResponse {
     pub success: bool,
     pub path: String,
+    pub saved_at: String,
 }

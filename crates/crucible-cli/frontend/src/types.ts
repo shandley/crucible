@@ -84,6 +84,7 @@ export interface CurationResponse {
   decisions: DecisionInfo[]
   summary: SummaryInfo
   progress: number
+  updated_at: string
 }
 
 export interface DecisionResponse {
@@ -98,6 +99,7 @@ export interface DecisionResponse {
 export interface SaveResponse {
   success: boolean
   path: string
+  saved_at: string
 }
 
 export interface DataPreviewResponse {
