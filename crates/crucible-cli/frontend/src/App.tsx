@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCuration, getDataPreview, acceptDecision, rejectDecision, saveCuration } from './api/client'
+import { getCuration, getDataPreview, acceptDecision, rejectDecision, saveCuration, batchAccept, batchReject } from './api/client'
+import type { BatchRequest } from './api/client'
 import { SuggestionCard, StatusBar, Button, DataPreview } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
 
@@ -98,6 +99,20 @@ export default function App() {
     mutationFn: saveCuration,
   })
 
+  const batchAcceptMutation = useMutation({
+    mutationFn: (request: BatchRequest) => batchAccept(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['curation'] })
+    },
+  })
+
+  const batchRejectMutation = useMutation({
+    mutationFn: (request: BatchRequest) => batchReject(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['curation'] })
+    },
+  })
+
   // Get highlighted rows and column based on selected suggestion
   const { highlightedRows, highlightedColumn } = useMemo(() => {
     if (!curation || !selectedSuggestionId) {
@@ -171,14 +186,36 @@ export default function App() {
                 ? `${curation.summary.pending_count} pending review`
                 : 'All suggestions reviewed'}
             </h2>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
+            <div className="flex items-center gap-2">
+              {curation.summary.pending_count > 0 && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => batchAcceptMutation.mutate({ all: true })}
+                    disabled={batchAcceptMutation.isPending}
+                  >
+                    {batchAcceptMutation.isPending ? 'Accepting...' : 'Accept All'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => batchRejectMutation.mutate({ all: true, notes: 'Batch rejected' })}
+                    disabled={batchRejectMutation.isPending}
+                  >
+                    {batchRejectMutation.isPending ? 'Rejecting...' : 'Reject All'}
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+              >
+                {saveMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-auto p-4">

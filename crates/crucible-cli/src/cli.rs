@@ -101,6 +101,37 @@ pub enum Commands {
         #[arg(long)]
         changed_only: bool,
     },
+
+    /// Batch accept or reject suggestions by type
+    Batch {
+        /// Path to curation file
+        #[arg(value_name = "CURATION_FILE")]
+        file: PathBuf,
+
+        /// Accept suggestions (cannot use with --reject)
+        #[arg(long, conflicts_with = "reject")]
+        accept: bool,
+
+        /// Reject suggestions (cannot use with --accept)
+        #[arg(long, conflicts_with = "accept")]
+        reject: bool,
+
+        /// Filter by action type (standardize, convert_na, flag, coerce, convert_date)
+        #[arg(long, short = 't')]
+        action_type: Option<String>,
+
+        /// Filter by column name
+        #[arg(long, short = 'c')]
+        column: Option<String>,
+
+        /// Accept/reject all pending suggestions
+        #[arg(long)]
+        all: bool,
+
+        /// User name for the decision
+        #[arg(long, default_value = "batch")]
+        user: String,
+    },
 }
 
 #[derive(Clone, Debug, Default)]

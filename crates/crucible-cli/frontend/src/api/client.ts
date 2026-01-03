@@ -63,3 +63,31 @@ export async function saveCuration(): Promise<SaveResponse> {
 export async function getDataPreview(): Promise<DataPreviewResponse> {
   return fetchApi<DataPreviewResponse>('/data')
 }
+
+export interface BatchRequest {
+  action_type?: string
+  column?: string
+  all?: boolean
+  user?: string
+  notes?: string
+}
+
+export interface BatchResponse {
+  processed: number
+  remaining: number
+  decisions: DecisionResponse[]
+}
+
+export async function batchAccept(request: BatchRequest): Promise<BatchResponse> {
+  return fetchApi<BatchResponse>('/batch/accept', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+}
+
+export async function batchReject(request: BatchRequest): Promise<BatchResponse> {
+  return fetchApi<BatchResponse>('/batch/reject', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+}

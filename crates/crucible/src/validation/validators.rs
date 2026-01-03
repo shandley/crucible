@@ -2277,6 +2277,130 @@ impl CrossColumnValidator {
     }
 }
 
+/// Validates that treatment/drug names use proper title case.
+///
+/// Drug names should typically be capitalized (e.g., "Infliximab" not "infliximab").
+/// This validator flags lowercase values in treatment-related columns.
+pub struct TitleCaseValidator;
+
+impl TitleCaseValidator {
+    /// Check if a column name suggests it contains treatment/drug names.
+    fn is_treatment_column(name: &str) -> bool {
+        let lower = name.to_lowercase();
+        lower.contains("treatment")
+            || lower.contains("drug")
+            || lower.contains("medication")
+            || lower.contains("medicine")
+            || lower.contains("therapy")
+            || lower.contains("rx")
+    }
+
+    /// Check if a value starts with lowercase when it should be title case.
+    fn needs_title_case(value: &str) -> bool {
+        let trimmed = value.trim();
+        if trimmed.is_empty() || DataTable::is_null_value(trimmed) {
+            return false;
+        }
+        // Check if first character is lowercase letter
+        trimmed.chars().next().map(|c| c.is_ascii_lowercase()).unwrap_or(false)
+    }
+
+    /// Convert a value to title case (capitalize first letter).
+    fn to_title_case(value: &str) -> String {
+        let mut chars: Vec<char> = value.chars().collect();
+        if let Some(first) = chars.first_mut() {
+            *first = first.to_ascii_uppercase();
+        }
+        chars.into_iter().collect()
+    }
+}
+
+impl Validator for TitleCaseValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            if !Self::is_treatment_column(&col_schema.name) {
+                continue;
+            }
+
+            // Find values that need title case
+            let mut lowercase_values: IndexMap<String, (usize, Vec<usize>)> = IndexMap::new();
+
+            for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+                if Self::needs_title_case(value) {
+                    let entry = lowercase_values
+                        .entry(value.to_string())
+                        .or_insert((0, Vec::new()));
+                    entry.0 += 1;
+                    if entry.1.len() < 5 {
+                        entry.1.push(row_idx + 1); // 1-indexed
+                    }
+                }
+            }
+
+            if lowercase_values.is_empty() {
+                continue;
+            }
+
+            let total: usize = lowercase_values.values().map(|(c, _)| c).sum();
+            let pct = (total as f64 / table.row_count() as f64) * 100.0;
+
+            // Build mapping for suggestions
+            let value_counts: serde_json::Value = lowercase_values
+                .iter()
+                .map(|(val, (count, _))| {
+                    let title = Self::to_title_case(val);
+                    (
+                        val.clone(),
+                        json!({
+                            "count": count,
+                            "suggestion": title
+                        }),
+                    )
+                })
+                .collect::<serde_json::Map<String, serde_json::Value>>()
+                .into();
+
+            let sample_rows: Vec<usize> = lowercase_values
+                .values()
+                .flat_map(|(_, rows)| rows.iter().copied())
+                .take(5)
+                .collect();
+
+            let examples: Vec<String> = lowercase_values
+                .keys()
+                .take(3)
+                .map(|v| format!("'{}' → '{}'", v, Self::to_title_case(v)))
+                .collect();
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "{} value(s) need title case: {}",
+                        total,
+                        examples.join(", ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total)
+                        .with_percentage(pct)
+                        .with_sample_rows(sample_rows)
+                        .with_value_counts(Some(value_counts)),
+                )
+                .with_confidence(0.85)
+                .with_detector("title_case_validator"),
+            );
+        }
+
+        observations
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -2302,6 +2426,7 @@ impl ValidationEngine {
                 Box::new(MissingPatternValidator::default()),
                 Box::new(RegexPatternValidator),
                 Box::new(CrossColumnValidator),
+                Box::new(TitleCaseValidator),
             ],
         }
     }

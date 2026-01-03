@@ -28,7 +28,10 @@ pub fn create_router(state: AppState) -> Router {
         // Decisions
         .route("/decisions/:id/accept", post(handlers::accept_decision))
         .route("/decisions/:id/reject", post(handlers::reject_decision))
-        .route("/decisions/:id/modify", post(handlers::modify_decision));
+        .route("/decisions/:id/modify", post(handlers::modify_decision))
+        // Batch operations
+        .route("/batch/accept", post(handlers::batch_accept))
+        .route("/batch/reject", post(handlers::batch_reject));
 
     Router::new()
         .nest("/api", api_routes)

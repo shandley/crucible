@@ -40,6 +40,16 @@ fn main() {
             context,
             changed_only,
         } => commands::diff::run(file, context, changed_only, cli.verbose),
+
+        Commands::Batch {
+            file,
+            accept,
+            reject,
+            action_type,
+            column,
+            all,
+            user,
+        } => commands::batch::run(file, accept, reject, action_type, column, all, user, cli.verbose),
     };
 
     if let Err(e) = result {
