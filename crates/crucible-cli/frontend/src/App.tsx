@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject } from './api/client'
 import type { BatchRequest } from './api/client'
-import { SuggestionCard, StatusBar, Button, DataPreview } from './components'
+import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
 
 /** An action that can be undone/redone */
@@ -93,6 +93,8 @@ export default function App() {
   const [columnFilter, setColumnFilter] = useState<string>('all')
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [, setTick] = useState(0) // Force re-render for relative time updates
+  const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -236,6 +238,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleUndo, handleRedo])
 
+  // Toggle group expansion
+  const toggleGroup = useCallback((column: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(column)) {
+        next.delete(column)
+      } else {
+        next.add(column)
+      }
+      return next
+    })
+  }, [])
+
   // Extract unique columns from observations for filtering
   const availableColumns = useMemo(() => {
     if (!curation) return []
@@ -254,6 +269,35 @@ export default function App() {
     const observation = findObservation(curation.observations, suggestion.observation_id)
     return observation?.column
   }, [curation])
+
+  // Group suggestions by column
+  interface SuggestionGroupData {
+    column: string
+    suggestions: SuggestionInfo[]
+    pendingCount: number
+  }
+
+  const groupedSuggestions = useMemo((): SuggestionGroupData[] => {
+    if (!curation) return []
+
+    const groups = new Map<string, SuggestionInfo[]>()
+
+    for (const suggestion of curation.suggestions) {
+      const column = getColumnForSuggestion(suggestion) || 'unknown'
+      if (!groups.has(column)) {
+        groups.set(column, [])
+      }
+      groups.get(column)!.push(suggestion)
+    }
+
+    return Array.from(groups.entries())
+      .map(([column, suggestions]) => ({
+        column,
+        suggestions: suggestions.sort((a, b) => a.priority - b.priority),
+        pendingCount: suggestions.filter(s => isPending(curation.decisions, s)).length,
+      }))
+      .sort((a, b) => b.pendingCount - a.pendingCount) // Groups with pending items first
+  }, [curation, getColumnForSuggestion])
 
   // Get highlighted rows and column based on selected suggestion
   const { highlightedRows, highlightedColumn } = useMemo(() => {
@@ -343,18 +387,31 @@ export default function App() {
                   : 'All suggestions reviewed'}
               </h2>
               {availableColumns.length > 1 && (
-                <select
-                  value={columnFilter}
-                  onChange={(e) => setColumnFilter(e.target.value)}
-                  className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="all">All columns</option>
-                  {availableColumns.map((col) => (
-                    <option key={col} value={col}>
-                      {col}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    value={columnFilter}
+                    onChange={(e) => setColumnFilter(e.target.value)}
+                    className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="all">All columns</option>
+                    {availableColumns.map((col) => (
+                      <option key={col} value={col}>
+                        {col}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setViewMode(viewMode === 'flat' ? 'grouped' : 'flat')}
+                    className={`rounded px-2 py-1 text-xs transition-colors ${
+                      viewMode === 'grouped'
+                        ? 'bg-foreground text-background'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                    title={viewMode === 'grouped' ? 'Switch to flat view' : 'Switch to grouped view'}
+                  >
+                    {viewMode === 'grouped' ? 'Grouped' : 'Group'}
+                  </button>
+                </>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -427,29 +484,72 @@ export default function App() {
               </div>
             )}
 
-            <div className="space-y-3">
-              {pendingSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.id}
-                  onClick={() => setSelectedSuggestionId(
-                    selectedSuggestionId === suggestion.id ? null : suggestion.id
-                  )}
-                  className="cursor-pointer"
-                >
-                  <SuggestionCard
-                    suggestion={suggestion}
-                    decision={findDecision(curation.decisions, suggestion.id)}
-                    isSelected={selectedSuggestionId === suggestion.id}
-                    onAccept={(notes) =>
-                      acceptMutation.mutate({ id: suggestion.id, notes })
-                    }
-                    onReject={(notes) =>
-                      rejectMutation.mutate({ id: suggestion.id, notes })
-                    }
-                  />
-                </div>
-              ))}
-            </div>
+            {viewMode === 'grouped' ? (
+              <div className="space-y-3">
+                {groupedSuggestions
+                  .filter(group => columnFilter === 'all' || group.column === columnFilter)
+                  .map((group) => (
+                    <SuggestionGroup
+                      key={group.column}
+                      column={group.column}
+                      pendingCount={group.pendingCount}
+                      totalCount={group.suggestions.length}
+                      isExpanded={expandedGroups.has(group.column)}
+                      onToggle={() => toggleGroup(group.column)}
+                      onAcceptAll={() => batchAcceptMutation.mutate({ column: group.column })}
+                      onRejectAll={() => batchRejectMutation.mutate({ column: group.column, notes: 'Batch rejected' })}
+                      isAccepting={batchAcceptMutation.isPending}
+                      isRejecting={batchRejectMutation.isPending}
+                    >
+                      {group.suggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          onClick={() => setSelectedSuggestionId(
+                            selectedSuggestionId === suggestion.id ? null : suggestion.id
+                          )}
+                          className="cursor-pointer"
+                        >
+                          <SuggestionCard
+                            suggestion={suggestion}
+                            decision={findDecision(curation.decisions, suggestion.id)}
+                            isSelected={selectedSuggestionId === suggestion.id}
+                            onAccept={(notes) =>
+                              acceptMutation.mutate({ id: suggestion.id, notes })
+                            }
+                            onReject={(notes) =>
+                              rejectMutation.mutate({ id: suggestion.id, notes })
+                            }
+                          />
+                        </div>
+                      ))}
+                    </SuggestionGroup>
+                  ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingSuggestions.map((suggestion) => (
+                  <div
+                    key={suggestion.id}
+                    onClick={() => setSelectedSuggestionId(
+                      selectedSuggestionId === suggestion.id ? null : suggestion.id
+                    )}
+                    className="cursor-pointer"
+                  >
+                    <SuggestionCard
+                      suggestion={suggestion}
+                      decision={findDecision(curation.decisions, suggestion.id)}
+                      isSelected={selectedSuggestionId === suggestion.id}
+                      onAccept={(notes) =>
+                        acceptMutation.mutate({ id: suggestion.id, notes })
+                      }
+                      onReject={(notes) =>
+                        rejectMutation.mutate({ id: suggestion.id, notes })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {reviewedSuggestions.length > 0 && (
               <>
