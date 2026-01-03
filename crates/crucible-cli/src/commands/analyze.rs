@@ -3,13 +3,19 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
-use crucible::{ContextHints, Crucible, CurationContext, CurationLayer, MockProvider, Severity};
+use crucible::{
+    AnthropicProvider, ContextHints, Crucible, CurationContext, CurationLayer, LlmConfig,
+    MockProvider, OllamaProvider, OpenAIProvider, Severity,
+};
+
+use crate::cli::LlmProviderChoice;
 
 pub fn run(
     file: PathBuf,
     output: Option<PathBuf>,
     domain: Option<String>,
-    mock_llm: bool,
+    llm: LlmProviderChoice,
+    model: Option<String>,
     verbose: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Validate input file exists
@@ -23,17 +29,15 @@ pub fn run(
         file.display().to_string().white()
     );
 
-    // Build Crucible instance
-    let mut crucible = Crucible::new();
-
-    if mock_llm {
-        crucible = crucible.with_llm(MockProvider::new());
-    }
+    // Build Crucible instance with selected LLM provider
+    let crucible = create_crucible_with_provider(llm, model, verbose)?;
 
     // Add domain context if provided
-    if let Some(ref d) = domain {
-        crucible = crucible.with_context(ContextHints::new().with_domain(d));
-    }
+    let crucible = if let Some(ref d) = domain {
+        crucible.with_context(ContextHints::new().with_domain(d))
+    } else {
+        crucible
+    };
 
     // Run analysis
     let result = crucible.analyze(&file)?;
@@ -125,4 +129,66 @@ pub fn run(
     }
 
     Ok(())
+}
+
+/// Create a Crucible instance with the selected LLM provider.
+fn create_crucible_with_provider(
+    provider: LlmProviderChoice,
+    model: Option<String>,
+    verbose: bool,
+) -> Result<Crucible, Box<dyn std::error::Error>> {
+    let crucible = Crucible::new();
+
+    match provider {
+        LlmProviderChoice::None => {
+            if verbose {
+                println!("  {} rule-based analysis (no LLM)", "Using".dimmed());
+            }
+            Ok(crucible)
+        }
+        LlmProviderChoice::Anthropic => {
+            if verbose {
+                println!("  {} Anthropic Claude API", "Using".dimmed());
+            }
+            let mut provider = AnthropicProvider::from_env()?;
+            if let Some(m) = model {
+                let mut config = LlmConfig::default();
+                config.model = m;
+                provider = AnthropicProvider::with_config(
+                    std::env::var("ANTHROPIC_API_KEY")?,
+                    config,
+                )?;
+            }
+            Ok(crucible.with_llm(provider))
+        }
+        LlmProviderChoice::OpenAI => {
+            if verbose {
+                println!("  {} OpenAI API", "Using".dimmed());
+            }
+            let mut provider = OpenAIProvider::from_env()?;
+            if let Some(m) = model {
+                let mut config = LlmConfig::default();
+                config.model = m;
+                provider = OpenAIProvider::with_config(
+                    std::env::var("OPENAI_API_KEY")?,
+                    config,
+                )?;
+            }
+            Ok(crucible.with_llm(provider))
+        }
+        LlmProviderChoice::Ollama => {
+            let model_name = model.as_deref().unwrap_or("llama3.2");
+            if verbose {
+                println!("  {} Ollama local model: {}", "Using".dimmed(), model_name);
+            }
+            let provider = OllamaProvider::with_model(model_name)?;
+            Ok(crucible.with_llm(provider))
+        }
+        LlmProviderChoice::Mock => {
+            if verbose {
+                println!("  {} mock LLM (for testing)", "Using".dimmed());
+            }
+            Ok(crucible.with_llm(MockProvider::new()))
+        }
+    }
 }

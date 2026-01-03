@@ -16,8 +16,9 @@ fn main() {
             file,
             output,
             domain,
-            mock_llm,
-        } => commands::analyze::run(file, output, domain, mock_llm, cli.verbose),
+            llm,
+            model,
+        } => commands::analyze::run(file, output, domain, llm, model, cli.verbose),
 
         Commands::Review {
             file,

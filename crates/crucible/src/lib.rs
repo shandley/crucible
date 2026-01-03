@@ -88,7 +88,10 @@ pub use crate::crucible::{AnalysisResult, Crucible, CrucibleConfig};
 pub use curation::{CurationContext, CurationLayer, Decision, DecisionStatus};
 pub use error::{CrucibleError, Result};
 pub use input::{ContextHints, DataTable, Parser, SourceMetadata};
-pub use llm::{AnthropicProvider, LlmConfig, LlmProvider, MockProvider, SchemaEnhancement};
+pub use llm::{
+    AnthropicProvider, LlmConfig, LlmProvider, MockProvider, OllamaProvider, OpenAIProvider,
+    SchemaEnhancement,
+};
 pub use schema::{ColumnSchema, ColumnType, Constraint, SemanticRole, TableSchema};
 pub use suggestion::{Suggestion, SuggestionAction};
 pub use transform::{TransformEngine, TransformOperation, TransformResult};

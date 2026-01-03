@@ -33,9 +33,13 @@ pub enum Commands {
         #[arg(short, long)]
         domain: Option<String>,
 
-        /// Use mock LLM provider (for testing without API key)
+        /// LLM provider to use for enhanced analysis
+        #[arg(long, default_value = "none")]
+        llm: LlmProviderChoice,
+
+        /// Model to use (provider-specific, e.g., "gpt-4o", "llama3.2")
         #[arg(long)]
-        mock_llm: bool,
+        model: Option<String>,
     },
 
     /// Open web UI for interactive curation review
@@ -126,6 +130,52 @@ impl std::fmt::Display for OutputFormat {
             OutputFormat::Tsv => write!(f, "tsv"),
             OutputFormat::Csv => write!(f, "csv"),
             OutputFormat::Json => write!(f, "json"),
+        }
+    }
+}
+
+/// LLM provider choice for analysis
+#[derive(Clone, Debug, Default)]
+pub enum LlmProviderChoice {
+    /// No LLM - use rule-based analysis only
+    #[default]
+    None,
+    /// Anthropic Claude API (requires ANTHROPIC_API_KEY)
+    Anthropic,
+    /// OpenAI GPT API (requires OPENAI_API_KEY)
+    OpenAI,
+    /// Ollama local models (requires Ollama running)
+    Ollama,
+    /// Mock provider for testing
+    Mock,
+}
+
+impl std::str::FromStr for LlmProviderChoice {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(LlmProviderChoice::None),
+            "anthropic" | "claude" => Ok(LlmProviderChoice::Anthropic),
+            "openai" | "gpt" => Ok(LlmProviderChoice::OpenAI),
+            "ollama" | "local" => Ok(LlmProviderChoice::Ollama),
+            "mock" | "test" => Ok(LlmProviderChoice::Mock),
+            _ => Err(format!(
+                "Unknown provider: {}. Use: none, anthropic, openai, ollama, or mock.",
+                s
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for LlmProviderChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LlmProviderChoice::None => write!(f, "none"),
+            LlmProviderChoice::Anthropic => write!(f, "anthropic"),
+            LlmProviderChoice::OpenAI => write!(f, "openai"),
+            LlmProviderChoice::Ollama => write!(f, "ollama"),
+            LlmProviderChoice::Mock => write!(f, "mock"),
         }
     }
 }
