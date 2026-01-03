@@ -70,37 +70,70 @@ impl TransformEngine {
         &self,
         suggestion: &crate::suggestion::Suggestion,
         observation: &crate::validation::Observation,
-        curation: &CurationLayer,
+        _curation: &CurationLayer,
         data: &DataTable,
     ) -> Result<Option<TransformOperation>> {
         match suggestion.action {
             SuggestionAction::Standardize => {
-                self.create_standardize_operation(observation, curation, data)
+                self.create_standardize_operation(suggestion, observation, data)
             }
-            SuggestionAction::Flag => self.create_flag_operation(observation),
-            SuggestionAction::ConvertNa => self.create_convert_na_operation(observation),
-            _ => Ok(Some(TransformOperation::NoOp {
-                reason: format!("Action {:?} not yet implemented", suggestion.action),
+            SuggestionAction::Flag => self.create_flag_operation(suggestion, observation),
+            SuggestionAction::ConvertNa => self.create_convert_na_operation(suggestion, observation),
+            SuggestionAction::Coerce => self.create_coerce_operation(suggestion, observation, data),
+            SuggestionAction::Remove => Ok(Some(TransformOperation::NoOp {
+                reason: "Remove operations require manual review".to_string(),
+            })),
+            SuggestionAction::Merge => Ok(Some(TransformOperation::NoOp {
+                reason: "Merge operations require manual review".to_string(),
+            })),
+            SuggestionAction::Rename => Ok(Some(TransformOperation::NoOp {
+                reason: "Rename operations not yet implemented".to_string(),
+            })),
+            SuggestionAction::Split => Ok(Some(TransformOperation::NoOp {
+                reason: "Split operations not yet implemented".to_string(),
+            })),
+            SuggestionAction::Derive => Ok(Some(TransformOperation::NoOp {
+                reason: "Derive operations not yet implemented".to_string(),
             })),
         }
     }
 
-    /// Create a standardize operation from an observation.
+    /// Create a standardize operation from a suggestion and observation.
     fn create_standardize_operation(
         &self,
+        suggestion: &crate::suggestion::Suggestion,
         observation: &crate::validation::Observation,
-        _curation: &CurationLayer,
         data: &DataTable,
     ) -> Result<Option<TransformOperation>> {
-        let column = observation.column.clone();
+        // Get column from suggestion parameters or observation
+        let column = suggestion
+            .parameters
+            .get("column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| observation.column.clone());
 
-        // Build the mapping based on observation type
-        let mapping = match observation.observation_type {
-            ObservationType::Inconsistency => {
-                self.extract_standardize_mapping(observation, data)?
+        // Try to get mapping from suggestion parameters first
+        let mut mapping = HashMap::new();
+        if let Some(param_mapping) = suggestion.parameters.get("mapping") {
+            if let Some(obj) = param_mapping.as_object() {
+                for (from, to) in obj {
+                    if let Some(to_str) = to.as_str() {
+                        mapping.insert(from.clone(), to_str.to_string());
+                    }
+                }
             }
-            _ => return Ok(None),
-        };
+        }
+
+        // Fall back to extracting from observation evidence
+        if mapping.is_empty() {
+            mapping = match observation.observation_type {
+                ObservationType::Inconsistency => {
+                    self.extract_standardize_mapping(observation, data)?
+                }
+                _ => HashMap::new(),
+            };
+        }
 
         if mapping.is_empty() {
             return Ok(None);
@@ -271,16 +304,45 @@ impl TransformEngine {
         mapping
     }
 
-    /// Create a flag operation from an observation.
+    /// Create a flag operation from a suggestion and observation.
     fn create_flag_operation(
         &self,
+        suggestion: &crate::suggestion::Suggestion,
         observation: &crate::validation::Observation,
     ) -> Result<Option<TransformOperation>> {
-        let source_column = observation.column.clone();
-        let flag_column = format!("{}_flagged", source_column);
+        // Get parameters from suggestion or defaults
+        let source_column = suggestion
+            .parameters
+            .get("column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| observation.column.clone());
 
-        // Get rows from evidence
-        let rows = observation.evidence.sample_rows.clone();
+        let flag_column = suggestion
+            .parameters
+            .get("flag_column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("{}_flagged", source_column));
+
+        let flag_value = suggestion
+            .parameters
+            .get("flag_value")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "REVIEW".to_string());
+
+        // Get rows from suggestion parameters or observation evidence
+        let rows: Vec<usize> = suggestion
+            .parameters
+            .get("rows")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_u64().map(|n| n as usize))
+                    .collect()
+            })
+            .unwrap_or_else(|| observation.evidence.sample_rows.clone());
 
         if rows.is_empty() {
             return Ok(Some(TransformOperation::NoOp {
@@ -292,23 +354,42 @@ impl TransformEngine {
             source_column,
             flag_column,
             rows,
-            flag_value: "REVIEW".to_string(),
+            flag_value,
         }))
     }
 
-    /// Create a convert NA operation from an observation.
+    /// Create a convert NA operation from a suggestion and observation.
     fn create_convert_na_operation(
         &self,
+        suggestion: &crate::suggestion::Suggestion,
         observation: &crate::validation::Observation,
     ) -> Result<Option<TransformOperation>> {
-        let column = observation.column.clone();
+        // Get column from suggestion parameters or observation
+        let column = suggestion
+            .parameters
+            .get("column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| observation.column.clone());
 
-        // Get the pattern to convert from evidence
-        let values = if let Some(ref pattern) = observation.evidence.pattern {
-            vec![pattern.clone()]
-        } else {
-            Vec::new()
-        };
+        // Get values to convert from suggestion parameters first
+        let values: Vec<String> = suggestion
+            .parameters
+            .get("from_values")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_else(|| {
+                // Fall back to observation evidence
+                if let Some(ref pattern) = observation.evidence.pattern {
+                    vec![pattern.clone()]
+                } else {
+                    Vec::new()
+                }
+            });
 
         if values.is_empty() {
             return Ok(Some(TransformOperation::NoOp {
@@ -317,6 +398,54 @@ impl TransformEngine {
         }
 
         Ok(Some(TransformOperation::ConvertNa { column, values }))
+    }
+
+    /// Create a coerce operation for type conversion.
+    fn create_coerce_operation(
+        &self,
+        suggestion: &crate::suggestion::Suggestion,
+        observation: &crate::validation::Observation,
+        _data: &DataTable,
+    ) -> Result<Option<TransformOperation>> {
+        // Get column from suggestion parameters or observation
+        let column = suggestion
+            .parameters
+            .get("column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| observation.column.clone());
+
+        // Get target type from suggestion parameters
+        let target_type = suggestion
+            .parameters
+            .get("target_type")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "string".to_string());
+
+        // Get rows with type issues from suggestion parameters or observation evidence
+        let rows: Vec<usize> = suggestion
+            .parameters
+            .get("rows")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_u64().map(|n| n as usize))
+                    .collect()
+            })
+            .unwrap_or_else(|| observation.evidence.sample_rows.clone());
+
+        if rows.is_empty() {
+            return Ok(Some(TransformOperation::NoOp {
+                reason: "No values to coerce".to_string(),
+            }));
+        }
+
+        Ok(Some(TransformOperation::Coerce {
+            column,
+            target_type,
+            rows,
+        }))
     }
 
     /// Apply a transformation operation to the data.
@@ -338,6 +467,11 @@ impl TransformEngine {
             TransformOperation::ConvertNa { column, values } => {
                 self.apply_convert_na(column, values, data)
             }
+            TransformOperation::Coerce {
+                column,
+                target_type,
+                rows,
+            } => self.apply_coerce(column, target_type, rows, data),
             TransformOperation::NoOp { reason } => Ok(TransformChange {
                 description: format!("Skipped: {}", reason),
                 column: String::new(),
@@ -437,6 +571,95 @@ impl TransformEngine {
 
         Ok(TransformChange {
             description: format!("Converted {:?} to NA in '{}'", values, column),
+            column: column.to_string(),
+            values_changed: changed,
+        })
+    }
+
+    /// Apply a type coercion transformation.
+    fn apply_coerce(
+        &self,
+        column: &str,
+        target_type: &str,
+        rows: &[usize],
+        data: &mut DataTable,
+    ) -> Result<TransformChange> {
+        let col_idx = data.column_index(column).ok_or_else(|| {
+            CrucibleError::Validation(format!("Column '{}' not found", column))
+        })?;
+
+        let mut changed = 0;
+        for &row_idx in rows {
+            if row_idx >= data.row_count() {
+                continue;
+            }
+
+            let value = data.get(row_idx, col_idx).unwrap_or_default().to_string();
+            let trimmed = value.trim();
+
+            // Skip empty/null values
+            if trimmed.is_empty() || DataTable::is_null_value(trimmed) {
+                continue;
+            }
+
+            // Try to coerce based on target type
+            let coerced = match target_type {
+                "integer" | "Integer" => {
+                    if trimmed.parse::<i64>().is_ok() {
+                        Some(trimmed.to_string())
+                    } else if let Some(f) = trimmed.parse::<f64>().ok() {
+                        // Try to convert float to int if it's a whole number
+                        if f.fract() == 0.0 {
+                            Some(format!("{}", f as i64))
+                        } else {
+                            None // Can't cleanly convert
+                        }
+                    } else {
+                        None // Convert to NA
+                    }
+                }
+                "float" | "Float" => {
+                    if trimmed.parse::<f64>().is_ok() {
+                        Some(trimmed.to_string())
+                    } else {
+                        None // Convert to NA
+                    }
+                }
+                "boolean" | "Boolean" => {
+                    let lower = trimmed.to_lowercase();
+                    if matches!(
+                        lower.as_str(),
+                        "true" | "false" | "yes" | "no" | "1" | "0" | "t" | "f" | "y" | "n"
+                    ) {
+                        // Standardize to true/false
+                        let is_true = matches!(lower.as_str(), "true" | "yes" | "1" | "t" | "y");
+                        Some(if is_true { "true" } else { "false" }.to_string())
+                    } else {
+                        None
+                    }
+                }
+                _ => Some(trimmed.to_string()), // String type - keep as is
+            };
+
+            match coerced {
+                Some(new_value) if new_value != trimmed => {
+                    data.set(row_idx, col_idx, new_value);
+                    changed += 1;
+                }
+                None => {
+                    // Convert non-coercible values to NA
+                    data.set(row_idx, col_idx, String::new());
+                    changed += 1;
+                }
+                _ => {} // Value unchanged
+            }
+        }
+
+        Ok(TransformChange {
+            description: format!(
+                "Coerced {} value(s) in '{}' to {}",
+                changed, column, target_type
+            ),
             column: column.to_string(),
             values_changed: changed,
         })

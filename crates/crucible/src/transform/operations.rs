@@ -27,6 +27,13 @@ pub enum TransformOperation {
         values: Vec<String>,
     },
 
+    /// Coerce values to a specific type (non-convertible become NA).
+    Coerce {
+        column: String,
+        target_type: String,
+        rows: Vec<usize>,
+    },
+
     /// No operation - just a marker that the suggestion was acknowledged.
     NoOp {
         reason: String,
@@ -60,6 +67,18 @@ impl TransformOperation {
             }
             TransformOperation::ConvertNa { column, values } => {
                 format!("Convert {:?} to NA in '{}'", values, column)
+            }
+            TransformOperation::Coerce {
+                column,
+                target_type,
+                rows,
+            } => {
+                format!(
+                    "Coerce {} values in '{}' to {}",
+                    rows.len(),
+                    column,
+                    target_type
+                )
             }
             TransformOperation::NoOp { reason } => {
                 format!("No action: {}", reason)
