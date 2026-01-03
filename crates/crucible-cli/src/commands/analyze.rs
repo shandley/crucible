@@ -4,11 +4,12 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 use crucible::{
+    bio::{BioValidator, MixsComplianceValidator, MixsPackage},
     AnthropicProvider, ContextHints, Crucible, CurationContext, CurationLayer, LlmConfig,
-    MockProvider, OllamaProvider, OpenAIProvider, Severity,
+    MockProvider, OllamaProvider, OpenAIProvider, Parser, Severity,
 };
 
-use crate::cli::LlmProviderChoice;
+use crate::cli::{LlmProviderChoice, MixsPackageChoice};
 
 pub fn run(
     file: PathBuf,
@@ -16,6 +17,7 @@ pub fn run(
     domain: Option<String>,
     llm: LlmProviderChoice,
     model: Option<String>,
+    mixs_package: Option<MixsPackageChoice>,
     verbose: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Validate input file exists
@@ -40,7 +42,49 @@ pub fn run(
     };
 
     // Run analysis
-    let result = crucible.analyze(&file)?;
+    let mut result = crucible.analyze(&file)?;
+
+    // Run MIxS compliance validation if requested
+    if let Some(ref pkg) = mixs_package {
+        let is_auto = matches!(pkg, MixsPackageChoice::Auto);
+        let mixs_pkg = convert_mixs_package(pkg);
+
+        // Parse the file to get data for bio validation
+        let parser = Parser::new();
+        let (table, _) = parser.parse_file(&file)?;
+
+        let mut validator = MixsComplianceValidator::new();
+        if !is_auto {
+            validator = validator.with_package(mixs_pkg);
+        }
+
+        let bio_observations = validator.validate(&table, &result.schema);
+
+        if verbose {
+            println!();
+            println!("{}", "MIxS Compliance:".yellow().bold());
+            let detected = validator.detect_package(&table, &result.schema);
+            println!("  Package: {:?}", detected.unwrap_or(mixs_pkg));
+            let score = validator.compliance_score(&table, &result.schema);
+            println!("  Compliance score: {:.0}%", score * 100.0);
+        }
+
+        // Count bio observations by severity
+        let bio_errors = bio_observations.iter().filter(|o| o.severity == Severity::Error).count();
+        let bio_warnings = bio_observations.iter().filter(|o| o.severity == Severity::Warning).count();
+
+        if bio_errors > 0 || bio_warnings > 0 {
+            println!(
+                "{} MIxS issues: {} errors, {} warnings",
+                "Found".cyan(),
+                bio_errors.to_string().red(),
+                bio_warnings.to_string().yellow()
+            );
+        }
+
+        // Merge bio observations into result
+        result.observations.extend(bio_observations);
+    }
 
     if verbose {
         println!();
@@ -190,5 +234,27 @@ fn create_crucible_with_provider(
             }
             Ok(crucible.with_llm(MockProvider::new()))
         }
+    }
+}
+
+/// Convert CLI MixsPackageChoice to library MixsPackage.
+fn convert_mixs_package(choice: &MixsPackageChoice) -> MixsPackage {
+    match choice {
+        MixsPackageChoice::HumanGut => MixsPackage::HumanGut,
+        MixsPackageChoice::HumanOral => MixsPackage::HumanOral,
+        MixsPackageChoice::HumanSkin => MixsPackage::HumanSkin,
+        MixsPackageChoice::HumanVaginal => MixsPackage::HumanVaginal,
+        MixsPackageChoice::HumanAssociated => MixsPackage::HumanAssociated,
+        MixsPackageChoice::Soil => MixsPackage::Soil,
+        MixsPackageChoice::Water => MixsPackage::Water,
+        MixsPackageChoice::Marine => MixsPackage::Water, // Marine uses water package
+        MixsPackageChoice::Air => MixsPackage::Air,
+        MixsPackageChoice::Sediment => MixsPackage::Sediment,
+        MixsPackageChoice::PlantAssociated => MixsPackage::PlantAssociated,
+        MixsPackageChoice::BuiltEnvironment => MixsPackage::BuiltEnvironment,
+        MixsPackageChoice::HostAssociated => MixsPackage::HostAssociated,
+        MixsPackageChoice::MicrobialMat => MixsPackage::MicrobialMatBiofilm,
+        MixsPackageChoice::MiscNatural => MixsPackage::MiscellaneousNaturalOrArtificialEnvironment,
+        MixsPackageChoice::Auto => MixsPackage::HumanGut, // Default for auto-detect start
     }
 }

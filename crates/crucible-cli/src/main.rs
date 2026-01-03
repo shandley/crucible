@@ -18,7 +18,8 @@ fn main() {
             domain,
             llm,
             model,
-        } => commands::analyze::run(file, output, domain, llm, model, cli.verbose),
+            mixs_package,
+        } => commands::analyze::run(file, output, domain, llm, model, mixs_package, cli.verbose),
 
         Commands::Review {
             file,

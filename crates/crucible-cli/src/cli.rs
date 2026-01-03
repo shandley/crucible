@@ -40,6 +40,10 @@ pub enum Commands {
         /// Model to use (provider-specific, e.g., "gpt-4o", "llama3.2")
         #[arg(long)]
         model: Option<String>,
+
+        /// MIxS environmental package for bioinformatics validation
+        #[arg(long)]
+        mixs_package: Option<MixsPackageChoice>,
     },
 
     /// Open web UI for interactive curation review
@@ -215,6 +219,95 @@ impl std::fmt::Display for LlmProviderChoice {
             LlmProviderChoice::OpenAI => write!(f, "openai"),
             LlmProviderChoice::Ollama => write!(f, "ollama"),
             LlmProviderChoice::Mock => write!(f, "mock"),
+        }
+    }
+}
+
+/// MIxS environmental package for bioinformatics validation
+#[derive(Clone, Debug)]
+pub enum MixsPackageChoice {
+    /// Human gut microbiome
+    HumanGut,
+    /// Human oral microbiome
+    HumanOral,
+    /// Human skin microbiome
+    HumanSkin,
+    /// Human vaginal microbiome
+    HumanVaginal,
+    /// Human-associated (general)
+    HumanAssociated,
+    /// Soil microbiome
+    Soil,
+    /// Water microbiome
+    Water,
+    /// Marine microbiome
+    Marine,
+    /// Air microbiome
+    Air,
+    /// Sediment microbiome
+    Sediment,
+    /// Plant-associated microbiome
+    PlantAssociated,
+    /// Built environment
+    BuiltEnvironment,
+    /// Host-associated (general)
+    HostAssociated,
+    /// Microbial mat/biofilm
+    MicrobialMat,
+    /// Miscellaneous natural environment
+    MiscNatural,
+    /// Auto-detect based on data
+    Auto,
+}
+
+impl std::str::FromStr for MixsPackageChoice {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().replace('-', "_").as_str() {
+            "human_gut" | "humangut" | "gut" => Ok(MixsPackageChoice::HumanGut),
+            "human_oral" | "humanoral" | "oral" => Ok(MixsPackageChoice::HumanOral),
+            "human_skin" | "humanskin" | "skin" => Ok(MixsPackageChoice::HumanSkin),
+            "human_vaginal" | "humanvaginal" | "vaginal" => Ok(MixsPackageChoice::HumanVaginal),
+            "human_associated" | "humanassociated" | "human" => Ok(MixsPackageChoice::HumanAssociated),
+            "soil" => Ok(MixsPackageChoice::Soil),
+            "water" | "freshwater" => Ok(MixsPackageChoice::Water),
+            "marine" | "ocean" => Ok(MixsPackageChoice::Marine),
+            "air" => Ok(MixsPackageChoice::Air),
+            "sediment" => Ok(MixsPackageChoice::Sediment),
+            "plant_associated" | "plantassociated" | "plant" => Ok(MixsPackageChoice::PlantAssociated),
+            "built_environment" | "builtenvironment" | "built" => Ok(MixsPackageChoice::BuiltEnvironment),
+            "host_associated" | "hostassociated" | "host" => Ok(MixsPackageChoice::HostAssociated),
+            "microbial_mat" | "microbialmat" | "biofilm" => Ok(MixsPackageChoice::MicrobialMat),
+            "misc_natural" | "miscnatural" | "misc" => Ok(MixsPackageChoice::MiscNatural),
+            "auto" | "detect" => Ok(MixsPackageChoice::Auto),
+            _ => Err(format!(
+                "Unknown MIxS package: {}. Use: human-gut, soil, water, marine, etc.",
+                s
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for MixsPackageChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MixsPackageChoice::HumanGut => write!(f, "human-gut"),
+            MixsPackageChoice::HumanOral => write!(f, "human-oral"),
+            MixsPackageChoice::HumanSkin => write!(f, "human-skin"),
+            MixsPackageChoice::HumanVaginal => write!(f, "human-vaginal"),
+            MixsPackageChoice::HumanAssociated => write!(f, "human-associated"),
+            MixsPackageChoice::Soil => write!(f, "soil"),
+            MixsPackageChoice::Water => write!(f, "water"),
+            MixsPackageChoice::Marine => write!(f, "marine"),
+            MixsPackageChoice::Air => write!(f, "air"),
+            MixsPackageChoice::Sediment => write!(f, "sediment"),
+            MixsPackageChoice::PlantAssociated => write!(f, "plant-associated"),
+            MixsPackageChoice::BuiltEnvironment => write!(f, "built-environment"),
+            MixsPackageChoice::HostAssociated => write!(f, "host-associated"),
+            MixsPackageChoice::MicrobialMat => write!(f, "microbial-mat"),
+            MixsPackageChoice::MiscNatural => write!(f, "misc-natural"),
+            MixsPackageChoice::Auto => write!(f, "auto"),
         }
     }
 }

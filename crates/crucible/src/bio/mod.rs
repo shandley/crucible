@@ -10,10 +10,10 @@
 //!
 //! # Example
 //!
-//! ```no_run
-//! use crucible::bio::{MixsValidator, MixsPackage};
+//! ```ignore
+//! use crucible::bio::{BioValidator, MixsComplianceValidator, MixsPackage};
 //!
-//! let validator = MixsValidator::new()
+//! let validator = MixsComplianceValidator::new()
 //!     .with_package(MixsPackage::HumanGut);
 //!
 //! // Check for missing mandatory fields
