@@ -93,6 +93,6 @@ pub use llm::{
     SchemaEnhancement,
 };
 pub use schema::{ColumnSchema, ColumnType, Constraint, SemanticRole, TableSchema};
-pub use suggestion::{Suggestion, SuggestionAction};
+pub use suggestion::{Suggestion, SuggestionAction, SuggestionEngine};
 pub use transform::{TransformEngine, TransformOperation, TransformResult};
 pub use validation::{Observation, ObservationType, Severity};

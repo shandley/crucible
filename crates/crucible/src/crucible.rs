@@ -10,7 +10,7 @@ use crate::inference::{FusionConfig, InferenceFusion};
 use crate::input::{ContextHints, Parser, ParserConfig, SourceMetadata};
 use crate::llm::LlmProvider;
 use crate::schema::TableSchema;
-use crate::suggestion::Suggestion;
+use crate::suggestion::{Suggestion, SuggestionEngine};
 use crate::validation::{Observation, ValidationEngine};
 
 /// Configuration for Crucible analysis.
@@ -153,11 +153,27 @@ impl Crucible {
         }
 
         // Generate suggestions
-        let suggestions = if let Some(ref llm) = self.llm_provider {
-            self.generate_suggestions(&observations, &schema, llm.as_ref())
-        } else {
-            Vec::new()
-        };
+        // First, generate rule-based suggestions from observations
+        let mut suggestions = SuggestionEngine::generate(&observations);
+
+        // If LLM is available, enhance or add LLM-generated suggestions
+        if let Some(ref llm) = self.llm_provider {
+            let llm_suggestions = self.generate_llm_suggestions(&observations, &schema, llm.as_ref());
+            // Merge LLM suggestions with rule-based ones
+            // LLM suggestions can provide better rationale for existing suggestions
+            // or add new suggestions that rules didn't catch
+            for llm_sug in llm_suggestions {
+                // Check if we already have a suggestion for this observation
+                if let Some(existing) = suggestions.iter_mut().find(|s| s.observation_id == llm_sug.observation_id) {
+                    // Use LLM rationale if it's more detailed
+                    if llm_sug.rationale.len() > existing.rationale.len() {
+                        existing.rationale = llm_sug.rationale;
+                    }
+                } else {
+                    suggestions.push(llm_sug);
+                }
+            }
+        }
 
         // Compute summary
         let summary = self.compute_summary(&schema, &observations);
@@ -220,8 +236,8 @@ impl Crucible {
         }
     }
 
-    /// Generate suggestions for observations.
-    fn generate_suggestions(
+    /// Generate LLM-enhanced suggestions for observations.
+    fn generate_llm_suggestions(
         &self,
         observations: &[Observation],
         schema: &TableSchema,
