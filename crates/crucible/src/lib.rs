@@ -79,6 +79,7 @@ pub mod input;
 pub mod llm;
 pub mod schema;
 pub mod suggestion;
+pub mod transform;
 pub mod validation;
 
 mod crucible;
@@ -86,8 +87,9 @@ mod crucible;
 pub use crate::crucible::{AnalysisResult, Crucible, CrucibleConfig};
 pub use curation::{CurationContext, CurationLayer, Decision, DecisionStatus};
 pub use error::{CrucibleError, Result};
-pub use input::{ContextHints, DataTable, SourceMetadata};
+pub use input::{ContextHints, DataTable, Parser, SourceMetadata};
 pub use llm::{AnthropicProvider, LlmConfig, LlmProvider, MockProvider, SchemaEnhancement};
 pub use schema::{ColumnSchema, ColumnType, Constraint, SemanticRole, TableSchema};
 pub use suggestion::{Suggestion, SuggestionAction};
+pub use transform::{TransformEngine, TransformOperation, TransformResult};
 pub use validation::{Observation, ObservationType, Severity};

@@ -120,4 +120,46 @@ impl DataTable {
             || trimmed == "."
             || trimmed == "-"
     }
+
+    /// Get column index by name.
+    pub fn column_index(&self, name: &str) -> Option<usize> {
+        self.headers.iter().position(|h| h == name)
+    }
+
+    /// Set a specific cell value.
+    pub fn set(&mut self, row: usize, col: usize, value: String) {
+        if row < self.rows.len() && col < self.headers.len() {
+            // Ensure the row has enough columns
+            while self.rows[row].len() <= col {
+                self.rows[row].push(String::new());
+            }
+            self.rows[row][col] = value;
+        }
+    }
+
+    /// Add a new column with a default value.
+    pub fn add_column(&mut self, name: String, default_value: String) {
+        self.headers.push(name);
+        for row in &mut self.rows {
+            row.push(default_value.clone());
+        }
+    }
+
+    /// Write the table to a file in the specified format.
+    pub fn write_to_file(&self, path: &std::path::Path, delimiter: u8) -> std::io::Result<()> {
+        use std::io::Write;
+        let mut file = std::fs::File::create(path)?;
+
+        // Write header
+        let header_line = self.headers.join(&String::from_utf8(vec![delimiter]).unwrap());
+        writeln!(file, "{}", header_line)?;
+
+        // Write rows
+        for row in &self.rows {
+            let row_line = row.join(&String::from_utf8(vec![delimiter]).unwrap());
+            writeln!(file, "{}", row_line)?;
+        }
+
+        Ok(())
+    }
 }

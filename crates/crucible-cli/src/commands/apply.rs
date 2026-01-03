@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
-use crucible::{CurationLayer, DecisionStatus};
+use crucible::{CurationLayer, DecisionStatus, Parser, TransformEngine};
 
 use crate::cli::OutputFormat;
 
@@ -12,7 +12,7 @@ pub fn run(
     output: Option<PathBuf>,
     format: OutputFormat,
     _with_audit: bool,
-    _verbose: bool,
+    verbose: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if !file.exists() {
         return Err(format!("Curation file not found: {}", file.display()).into());
@@ -46,6 +46,61 @@ pub fn run(
         approved.len().to_string().white().bold()
     );
 
+    // Find and load the source data file
+    let source_path = resolve_source_path(&file, &curation)?;
+
+    if verbose {
+        println!(
+            "  {} {}",
+            "Source:".dimmed(),
+            source_path.display().to_string().dimmed()
+        );
+    }
+
+    // Parse the source data
+    let parser = Parser::new();
+    let (mut data, _source_metadata) = parser.parse_file(&source_path)?;
+
+    if verbose {
+        println!(
+            "  {} {} rows × {} columns",
+            "Loaded:".dimmed(),
+            data.row_count().to_string().dimmed(),
+            data.column_count().to_string().dimmed()
+        );
+    }
+
+    // Apply transformations
+    let engine = TransformEngine::new();
+    let result = engine.apply(&curation, &mut data)?;
+
+    // Report changes
+    if result.operations_applied > 0 {
+        println!();
+        println!(
+            "{} {} transformations",
+            "Applied".green().bold(),
+            result.operations_applied.to_string().white().bold()
+        );
+
+        for change in &result.changes {
+            if change.values_changed > 0 || verbose {
+                println!(
+                    "  {} {} ({} values)",
+                    "•".dimmed(),
+                    change.description,
+                    change.values_changed
+                );
+            }
+        }
+    } else {
+        println!();
+        println!(
+            "{} No data changes were needed.",
+            "Note:".yellow()
+        );
+    }
+
     // Determine output path
     let output_path = output.unwrap_or_else(|| {
         let source_file = PathBuf::from(&curation.source.file);
@@ -58,16 +113,84 @@ pub fn run(
         file.with_file_name(format!("{}_curated.{}", stem, ext))
     });
 
-    // TODO: Implement actual transformation logic
+    // Determine delimiter for output
+    let delimiter = match format {
+        OutputFormat::Tsv => b'\t',
+        OutputFormat::Csv => b',',
+        OutputFormat::Json => {
+            // JSON output not yet implemented
+            println!(
+                "{} JSON output not yet implemented, using TSV instead.",
+                "Note:".yellow()
+            );
+            b'\t'
+        }
+    };
+
+    // Write the transformed data
+    data.write_to_file(&output_path, delimiter)?;
+
     println!();
     println!(
-        "{} Transformation logic not yet implemented.",
-        "Note:".yellow()
-    );
-    println!(
-        "Would save curated data to: {}",
+        "{} {}",
+        "Saved:".green().bold(),
         output_path.display().to_string().cyan()
     );
 
+    // Show summary
+    println!();
+    println!("{}", "Summary:".white().bold());
+    println!(
+        "  {} rows processed",
+        data.row_count().to_string().cyan()
+    );
+    println!(
+        "  {} values modified",
+        result.rows_modified.to_string().cyan()
+    );
+
     Ok(())
+}
+
+/// Resolve the source data file path from the curation layer.
+fn resolve_source_path(
+    curation_file: &PathBuf,
+    curation: &CurationLayer,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    // First, try the path stored in the curation layer
+    let stored_path = &curation.source.path;
+    if stored_path.exists() {
+        return Ok(stored_path.clone());
+    }
+
+    // If the stored path doesn't exist, try relative to the curation file
+    let curation_dir = curation_file.parent().unwrap_or(std::path::Path::new("."));
+
+    // Try the filename from the curation layer
+    let relative_path = curation_dir.join(&curation.source.file);
+    if relative_path.exists() {
+        return Ok(relative_path);
+    }
+
+    // Try common patterns
+    let stem = curation_file
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or_default();
+
+    // If the curation file is "foo.curation.json", try "foo.tsv", "foo.csv"
+    let data_stem = stem.trim_end_matches(".curation");
+    for ext in &["tsv", "csv", "txt"] {
+        let data_file = curation_dir.join(format!("{}.{}", data_stem, ext));
+        if data_file.exists() {
+            return Ok(data_file);
+        }
+    }
+
+    Err(format!(
+        "Could not find source data file. Tried:\n  - {}\n  - {}\nPlease ensure the source file exists.",
+        stored_path.display(),
+        relative_path.display()
+    )
+    .into())
 }
