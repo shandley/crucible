@@ -35,7 +35,14 @@ impl SuggestionEngine {
     fn generate_for_observation(obs: &Observation) -> Option<Suggestion> {
         match obs.observation_type {
             ObservationType::MissingPattern => Self::suggest_convert_na(obs),
-            ObservationType::Inconsistency => Self::suggest_standardize(obs),
+            ObservationType::Inconsistency => {
+                // Check if this is a date format inconsistency
+                if Self::is_date_format_issue(obs) {
+                    Self::suggest_convert_date(obs)
+                } else {
+                    Self::suggest_standardize(obs)
+                }
+            }
             ObservationType::Outlier => Self::suggest_flag_outlier(obs),
             ObservationType::Duplicate => Self::suggest_handle_duplicate(obs),
             ObservationType::TypeMismatch => Self::suggest_handle_type_mismatch(obs),
@@ -46,6 +53,38 @@ impl SuggestionEngine {
             ObservationType::PatternViolation => Self::suggest_flag_pattern(obs),
             ObservationType::CrossColumnInconsistency => Self::suggest_flag_cross_column(obs),
         }
+    }
+
+    /// Check if an observation is about date format inconsistencies.
+    fn is_date_format_issue(obs: &Observation) -> bool {
+        let desc = &obs.description;
+        desc.contains("date format") || desc.contains("Mixed date")
+    }
+
+    /// Generate suggestion to standardize date formats.
+    fn suggest_convert_date(obs: &Observation) -> Option<Suggestion> {
+        let occurrences = obs.evidence.occurrences.unwrap_or(0);
+
+        let params = json!({
+            "column": obs.column,
+            "target_format": "ISO (YYYY-MM-DD)",
+        });
+
+        Some(
+            Suggestion::new(
+                &obs.id,
+                SuggestionAction::ConvertDate,
+                format!(
+                    "Standardize {} date value(s) in column '{}' to ISO format (YYYY-MM-DD). This ensures consistent date handling across all rows.",
+                    occurrences, obs.column
+                ),
+            )
+            .with_parameters(params)
+            .with_affected_rows(occurrences)
+            .with_confidence(obs.confidence)
+            .with_priority(2) // High priority - format consistency is important
+            .with_suggester("rule_engine"),
+        )
     }
 
     /// Generate suggestion to convert missing patterns to NA.

@@ -1,9 +1,9 @@
 sample_id	diagnosis	age	bmi	treatment	visit_date	_crucible_modified	_crucible_original	_crucible_reason
 IBD001	CD	45	23.5	Infliximab	2024-01-15			
-IBD002	CD	52	27.1	adalimumab	2024/02/20	diagnosis=CD	diagnosis=Crohn's	Normalized 'Crohn's' to 'CD'
-IBD003	CD	38	21.8	Infliximab	15-Mar-2024	diagnosis=CD	diagnosis=cd	Normalized 'cd' to 'CD'
+IBD002	Crohn's	52	27.1	adalimumab	2024-02-20	visit_date=2024-02-20	visit_date=2024/02/20	Converted '2024/02/20' to ISO format '2024-02-20'
+IBD003	cd	38	21.8	Infliximab	2024-03-15	visit_date=2024-03-15	visit_date=15-Mar-2024	Converted '15-Mar-2024' to ISO format '2024-03-15'
 IBD004	UC	41	24.2	Vedolizumab	2024-04-10			
-IBD005	UC	29	-5.2	mesalamine	April 5, 2024	diagnosis=UC	diagnosis=ulcerative colitis	Normalized 'ulcerative colitis' to 'UC'
+IBD005	ulcerative colitis	29	-5.2	mesalamine	2024-04-05	visit_date=2024-04-05	visit_date=April 5, 2024	Converted 'April 5, 2024' to ISO format '2024-04-05'
 IBD006	CD	55	26.8	Ustekinumab	2024-05-22			
-IBD007	CD	44	22.9	Infliximab	2024-06-18	treatment=Infliximab; diagnosis=CD	treatment=infliximab; diagnosis=Crohns	Normalized 'infliximab' to 'Infliximab'; Normalized 'Crohns' to 'CD'
+IBD007	Crohns	44	22.9	infliximab	2024-06-18			
 IBD008	UC	33	28.5	Vedolizumab	2024-07-03			

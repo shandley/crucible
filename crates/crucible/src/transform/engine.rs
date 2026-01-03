@@ -80,6 +80,9 @@ impl TransformEngine {
             SuggestionAction::Flag => self.create_flag_operation(suggestion, observation),
             SuggestionAction::ConvertNa => self.create_convert_na_operation(suggestion, observation),
             SuggestionAction::Coerce => self.create_coerce_operation(suggestion, observation, data),
+            SuggestionAction::ConvertDate => {
+                self.create_convert_date_operation(suggestion, observation)
+            }
             SuggestionAction::Remove => Ok(Some(TransformOperation::NoOp {
                 reason: "Remove operations require manual review".to_string(),
             })),
@@ -96,6 +99,32 @@ impl TransformEngine {
                 reason: "Derive operations not yet implemented".to_string(),
             })),
         }
+    }
+
+    /// Create a convert date operation from a suggestion and observation.
+    fn create_convert_date_operation(
+        &self,
+        suggestion: &crate::suggestion::Suggestion,
+        observation: &crate::validation::Observation,
+    ) -> Result<Option<TransformOperation>> {
+        let column = suggestion
+            .parameters
+            .get("column")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| observation.column.clone());
+
+        let target_format = suggestion
+            .parameters
+            .get("target_format")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "ISO (YYYY-MM-DD)".to_string());
+
+        Ok(Some(TransformOperation::ConvertDate {
+            column,
+            target_format,
+        }))
     }
 
     /// Create a standardize operation from a suggestion and observation.
@@ -472,6 +501,10 @@ impl TransformEngine {
                 target_type,
                 rows,
             } => self.apply_coerce(column, target_type, rows, data),
+            TransformOperation::ConvertDate {
+                column,
+                target_format,
+            } => self.apply_convert_date(column, target_format, data),
             TransformOperation::NoOp { reason } => Ok(TransformChange {
                 description: format!("Skipped: {}", reason),
                 column: String::new(),
@@ -718,6 +751,217 @@ impl TransformEngine {
             values_changed: changed,
             row_audits,
         })
+    }
+
+    /// Apply a date format conversion.
+    fn apply_convert_date(
+        &self,
+        column: &str,
+        _target_format: &str,
+        data: &mut DataTable,
+    ) -> Result<TransformChange> {
+        let col_idx = data.column_index(column).ok_or_else(|| {
+            CrucibleError::Validation(format!("Column '{}' not found", column))
+        })?;
+
+        let mut changed = 0;
+        let mut row_audits = Vec::new();
+
+        for row_idx in 0..data.row_count() {
+            let value = data.get(row_idx, col_idx).unwrap_or_default().to_string();
+            let trimmed = value.trim();
+
+            // Skip empty/null values
+            if trimmed.is_empty() || DataTable::is_null_value(trimmed) {
+                continue;
+            }
+
+            // Try to parse and convert to ISO format
+            if let Some(iso_date) = Self::parse_date_to_iso(trimmed) {
+                if iso_date != trimmed {
+                    row_audits.push(RowAudit {
+                        row: row_idx,
+                        column: column.to_string(),
+                        original_value: trimmed.to_string(),
+                        new_value: iso_date.clone(),
+                        transform_type: "convert_date".to_string(),
+                        reason: format!("Converted '{}' to ISO format '{}'", trimmed, iso_date),
+                    });
+                    data.set(row_idx, col_idx, iso_date);
+                    changed += 1;
+                }
+            }
+        }
+
+        Ok(TransformChange {
+            description: format!(
+                "Standardized {} date(s) in '{}' to ISO format",
+                changed, column
+            ),
+            column: column.to_string(),
+            values_changed: changed,
+            row_audits,
+        })
+    }
+
+    /// Parse a date string from various formats to ISO (YYYY-MM-DD).
+    fn parse_date_to_iso(value: &str) -> Option<String> {
+        let trimmed = value.trim();
+
+        // Already ISO format (YYYY-MM-DD)
+        if Self::is_iso_format(trimmed) {
+            return Some(trimmed.to_string());
+        }
+
+        // Try YYYY/MM/DD format
+        if let Some(date) = Self::parse_year_slash(trimmed) {
+            return Some(date);
+        }
+
+        // Try month name formats (Jan 15 2024, January 15, 2024, 15-Mar-2024, etc.)
+        if let Some(date) = Self::parse_month_name(trimmed) {
+            return Some(date);
+        }
+
+        // Try US format MM/DD/YYYY
+        if let Some(date) = Self::parse_us_slash(trimmed) {
+            return Some(date);
+        }
+
+        // Try US format MM-DD-YYYY
+        if let Some(date) = Self::parse_us_dash(trimmed) {
+            return Some(date);
+        }
+
+        None
+    }
+
+    /// Check if a string is already in ISO format (YYYY-MM-DD).
+    fn is_iso_format(s: &str) -> bool {
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return false;
+        }
+        parts[0].len() == 4
+            && parts[0].chars().all(|c| c.is_ascii_digit())
+            && parts[1].len() <= 2
+            && parts[1].chars().all(|c| c.is_ascii_digit())
+            && parts[2].len() <= 2
+            && parts[2].chars().all(|c| c.is_ascii_digit())
+            && parts[0].parse::<u32>().unwrap_or(0) >= 1900
+    }
+
+    /// Parse YYYY/MM/DD format.
+    fn parse_year_slash(s: &str) -> Option<String> {
+        let parts: Vec<&str> = s.split('/').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+        if parts[0].len() == 4 && parts[0].chars().all(|c| c.is_ascii_digit()) {
+            let year: u32 = parts[0].parse().ok()?;
+            let month: u32 = parts[1].parse().ok()?;
+            let day: u32 = parts[2].parse().ok()?;
+            if year >= 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+                return Some(format!("{:04}-{:02}-{:02}", year, month, day));
+            }
+        }
+        None
+    }
+
+    /// Parse month name formats (various).
+    fn parse_month_name(s: &str) -> Option<String> {
+        let months = [
+            ("january", 1), ("february", 2), ("march", 3), ("april", 4),
+            ("may", 5), ("june", 6), ("july", 7), ("august", 8),
+            ("september", 9), ("october", 10), ("november", 11), ("december", 12),
+            ("jan", 1), ("feb", 2), ("mar", 3), ("apr", 4),
+            ("jun", 6), ("jul", 7), ("aug", 8), ("sep", 9),
+            ("oct", 10), ("nov", 11), ("dec", 12),
+        ];
+
+        let lower = s.to_lowercase();
+        let cleaned: String = lower.chars().filter(|c| *c != ',').collect();
+
+        // Try to find a month
+        let mut month_num: Option<u32> = None;
+        let mut month_str = "";
+        for (name, num) in &months {
+            if cleaned.contains(name) {
+                // Prefer longer matches (January over Jan)
+                if month_str.len() < name.len() {
+                    month_num = Some(*num);
+                    month_str = name;
+                }
+            }
+        }
+
+        let month = month_num?;
+
+        // Extract numbers from the string
+        let numbers: Vec<u32> = cleaned
+            .split(|c: char| !c.is_ascii_digit())
+            .filter(|s| !s.is_empty())
+            .filter_map(|s| s.parse().ok())
+            .collect();
+
+        if numbers.is_empty() {
+            return None;
+        }
+
+        // Determine year and day
+        let (year, day) = if numbers.len() >= 2 {
+            // Find year (4 digits) and day
+            let year = numbers.iter().find(|&&n| n >= 1900 && n <= 2100)?;
+            let day = numbers.iter().find(|&&n| n >= 1 && n <= 31 && n != *year)?;
+            (*year, *day)
+        } else if numbers.len() == 1 && numbers[0] >= 1900 {
+            // Only year, assume day 1
+            (numbers[0], 1)
+        } else {
+            return None;
+        };
+
+        if day >= 1 && day <= 31 {
+            Some(format!("{:04}-{:02}-{:02}", year, month, day))
+        } else {
+            None
+        }
+    }
+
+    /// Parse US format MM/DD/YYYY.
+    fn parse_us_slash(s: &str) -> Option<String> {
+        let parts: Vec<&str> = s.split('/').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+        // Check if year is at the end (4 digits)
+        if parts[2].len() == 4 && parts[2].chars().all(|c| c.is_ascii_digit()) {
+            let month: u32 = parts[0].parse().ok()?;
+            let day: u32 = parts[1].parse().ok()?;
+            let year: u32 = parts[2].parse().ok()?;
+            if year >= 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+                return Some(format!("{:04}-{:02}-{:02}", year, month, day));
+            }
+        }
+        None
+    }
+
+    /// Parse US format MM-DD-YYYY.
+    fn parse_us_dash(s: &str) -> Option<String> {
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+        // Check if year is at the end (4 digits)
+        if parts[2].len() == 4 && parts[2].chars().all(|c| c.is_ascii_digit()) {
+            let month: u32 = parts[0].parse().ok()?;
+            let day: u32 = parts[1].parse().ok()?;
+            let year: u32 = parts[2].parse().ok()?;
+            if year >= 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+                return Some(format!("{:04}-{:02}-{:02}", year, month, day));
+            }
+        }
+        None
     }
 }
 

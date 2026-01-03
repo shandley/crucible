@@ -34,6 +34,12 @@ pub enum TransformOperation {
         rows: Vec<usize>,
     },
 
+    /// Standardize date formats to ISO (YYYY-MM-DD).
+    ConvertDate {
+        column: String,
+        target_format: String,
+    },
+
     /// No operation - just a marker that the suggestion was acknowledged.
     NoOp {
         reason: String,
@@ -79,6 +85,12 @@ impl TransformOperation {
                     column,
                     target_type
                 )
+            }
+            TransformOperation::ConvertDate {
+                column,
+                target_format,
+            } => {
+                format!("Standardize dates in '{}' to {}", column, target_format)
             }
             TransformOperation::NoOp { reason } => {
                 format!("No action: {}", reason)

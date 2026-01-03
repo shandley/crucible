@@ -16,6 +16,8 @@ pub enum SuggestionAction {
     ConvertNa,
     /// Type conversion (e.g., string to number).
     Coerce,
+    /// Standardize date formats to ISO (YYYY-MM-DD).
+    ConvertDate,
     /// Add a flag column for human review.
     Flag,
     /// Remove row or column.
@@ -37,6 +39,7 @@ impl SuggestionAction {
             SuggestionAction::Standardize => "Standardize",
             SuggestionAction::ConvertNa => "Convert to NA",
             SuggestionAction::Coerce => "Type Coercion",
+            SuggestionAction::ConvertDate => "Standardize Dates",
             SuggestionAction::Flag => "Flag for Review",
             SuggestionAction::Remove => "Remove",
             SuggestionAction::Merge => "Merge Duplicates",
