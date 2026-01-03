@@ -77,6 +77,7 @@ export default function App() {
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
   const [undoStack, setUndoStack] = useState<UndoableAction[]>([])
   const [redoStack, setRedoStack] = useState<UndoableAction[]>([])
+  const [columnFilter, setColumnFilter] = useState<string>('all')
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -192,6 +193,25 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleUndo, handleRedo])
 
+  // Extract unique columns from observations for filtering
+  const availableColumns = useMemo(() => {
+    if (!curation) return []
+    const columns = new Set<string>()
+    for (const obs of curation.observations) {
+      if (obs.column) {
+        columns.add(obs.column)
+      }
+    }
+    return Array.from(columns).sort()
+  }, [curation])
+
+  // Helper to get column for a suggestion
+  const getColumnForSuggestion = useCallback((suggestion: SuggestionInfo): string | undefined => {
+    if (!curation) return undefined
+    const observation = findObservation(curation.observations, suggestion.observation_id)
+    return observation?.column
+  }, [curation])
+
   // Get highlighted rows and column based on selected suggestion
   const { highlightedRows, highlightedColumn } = useMemo(() => {
     if (!curation || !selectedSuggestionId) {
@@ -238,15 +258,26 @@ export default function App() {
     )
   }
 
-  const pendingSuggestions = curation.suggestions.filter(s =>
-    isPending(curation.decisions, s)
-  )
-  const reviewedSuggestions = curation.suggestions.filter(s =>
-    !isPending(curation.decisions, s)
-  )
+  // Filter suggestions by column
+  const filterByColumn = (suggestion: SuggestionInfo) => {
+    if (columnFilter === 'all') return true
+    const col = getColumnForSuggestion(suggestion)
+    return col === columnFilter
+  }
+
+  const pendingSuggestions = curation.suggestions
+    .filter(s => isPending(curation.decisions, s))
+    .filter(filterByColumn)
+
+  const reviewedSuggestions = curation.suggestions
+    .filter(s => !isPending(curation.decisions, s))
+    .filter(filterByColumn)
 
   // Sort pending by priority (lower = higher priority)
   pendingSuggestions.sort((a, b) => a.priority - b.priority)
+
+  // Count total pending (unfiltered) for header
+  const totalPending = curation.suggestions.filter(s => isPending(curation.decisions, s)).length
 
   return (
     <div className="flex h-screen flex-col bg-muted/30">
@@ -260,11 +291,29 @@ export default function App() {
         {/* Left panel: Suggestions */}
         <div className="flex w-1/2 flex-col border-r">
           <div className="flex items-center justify-between border-b bg-background px-4 py-3">
-            <h2 className="text-sm font-medium">
-              {curation.summary.pending_count > 0
-                ? `${curation.summary.pending_count} pending review`
-                : 'All suggestions reviewed'}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-medium">
+                {totalPending > 0
+                  ? columnFilter !== 'all'
+                    ? `${pendingSuggestions.length} of ${totalPending} pending`
+                    : `${totalPending} pending review`
+                  : 'All suggestions reviewed'}
+              </h2>
+              {availableColumns.length > 1 && (
+                <select
+                  value={columnFilter}
+                  onChange={(e) => setColumnFilter(e.target.value)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="all">All columns</option>
+                  {availableColumns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {/* Undo/Redo buttons */}
               <Button

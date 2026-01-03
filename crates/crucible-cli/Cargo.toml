@@ -9,12 +9,20 @@ license = "MIT"
 name = "crucible"
 path = "src/main.rs"
 
+[features]
+default = []
+parquet = ["dep:parquet", "dep:arrow"]
+
 [dependencies]
 # Core library
 crucible = { path = "../crucible" }
 
 # CLI
 clap = { version = "4.4", features = ["derive"] }
+
+# Parquet support (optional)
+parquet = { version = "53", optional = true }
+arrow = { version = "53", optional = true, default-features = false, features = ["chrono-tz"] }
 
 # Web server
 axum = "0.7"

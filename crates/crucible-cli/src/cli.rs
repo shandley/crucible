@@ -140,6 +140,8 @@ pub enum OutputFormat {
     Tsv,
     Csv,
     Json,
+    #[cfg(feature = "parquet")]
+    Parquet,
 }
 
 impl std::str::FromStr for OutputFormat {
@@ -150,6 +152,10 @@ impl std::str::FromStr for OutputFormat {
             "tsv" => Ok(OutputFormat::Tsv),
             "csv" => Ok(OutputFormat::Csv),
             "json" => Ok(OutputFormat::Json),
+            #[cfg(feature = "parquet")]
+            "parquet" => Ok(OutputFormat::Parquet),
+            #[cfg(not(feature = "parquet"))]
+            "parquet" => Err("Parquet support not enabled. Rebuild with --features parquet".to_string()),
             _ => Err(format!("Unknown format: {}. Use tsv, csv, or json.", s)),
         }
     }
@@ -161,6 +167,8 @@ impl std::fmt::Display for OutputFormat {
             OutputFormat::Tsv => write!(f, "tsv"),
             OutputFormat::Csv => write!(f, "csv"),
             OutputFormat::Json => write!(f, "json"),
+            #[cfg(feature = "parquet")]
+            OutputFormat::Parquet => write!(f, "parquet"),
         }
     }
 }

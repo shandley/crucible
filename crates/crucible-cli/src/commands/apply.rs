@@ -115,6 +115,8 @@ pub fn run(
             OutputFormat::Tsv => "tsv",
             OutputFormat::Csv => "csv",
             OutputFormat::Json => "json",
+            #[cfg(feature = "parquet")]
+            OutputFormat::Parquet => "parquet",
         };
         file.with_file_name(format!("{}_curated.{}", stem, ext))
     });
@@ -129,6 +131,10 @@ pub fn run(
         }
         OutputFormat::Csv => {
             data.write_to_file(&output_path, b',')?;
+        }
+        #[cfg(feature = "parquet")]
+        OutputFormat::Parquet => {
+            write_parquet(&data, &output_path)?;
         }
     }
 
@@ -262,4 +268,53 @@ fn resolve_source_path(
         relative_path.display()
     )
     .into())
+}
+
+/// Write data to a Parquet file.
+#[cfg(feature = "parquet")]
+fn write_parquet(
+    data: &crucible::DataTable,
+    path: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use arrow::array::StringArray;
+    use arrow::datatypes::{DataType, Field, Schema};
+    use arrow::record_batch::RecordBatch;
+    use parquet::arrow::ArrowWriter;
+    use std::sync::Arc;
+
+    // Create schema with all string columns
+    let fields: Vec<Field> = data
+        .headers()
+        .iter()
+        .map(|name| Field::new(name, DataType::Utf8, true))
+        .collect();
+    let schema = Arc::new(Schema::new(fields));
+
+    // Create arrays for each column
+    let arrays: Vec<Arc<dyn arrow::array::Array>> = (0..data.column_count())
+        .map(|col_idx| {
+            let values: Vec<Option<&str>> = (0..data.row_count())
+                .map(|row_idx| {
+                    let val = data.get(row_idx, col_idx);
+                    if val.is_empty() {
+                        None
+                    } else {
+                        Some(val.as_str())
+                    }
+                })
+                .collect();
+            Arc::new(StringArray::from(values)) as Arc<dyn arrow::array::Array>
+        })
+        .collect();
+
+    // Create record batch
+    let batch = RecordBatch::try_new(schema.clone(), arrays)?;
+
+    // Write to file
+    let file = std::fs::File::create(path)?;
+    let mut writer = ArrowWriter::try_new(file, schema, None)?;
+    writer.write(&batch)?;
+    writer.close()?;
+
+    Ok(())
 }
