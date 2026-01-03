@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject } from './api/client'
 import type { BatchRequest } from './api/client'
@@ -95,6 +95,7 @@ export default function App() {
   const [, setTick] = useState(0) // Force re-render for relative time updates
   const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const suggestionRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -221,23 +222,6 @@ export default function App() {
     setUndoStack(prev => [...prev, lastAction])
   }, [redoStack, queryClient])
 
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) {
-          handleRedo()
-        } else {
-          handleUndo()
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleUndo, handleRedo])
-
   // Toggle group expansion
   const toggleGroup = useCallback((column: string) => {
     setExpandedGroups(prev => {
@@ -299,6 +283,161 @@ export default function App() {
       .sort((a, b) => b.pendingCount - a.pendingCount) // Groups with pending items first
   }, [curation, getColumnForSuggestion])
 
+  // Filtered pending and reviewed suggestions (as useMemo for proper dependency tracking)
+  const { pendingSuggestions, reviewedSuggestions } = useMemo(() => {
+    if (!curation) return { pendingSuggestions: [], reviewedSuggestions: [] }
+
+    const filterByColumn = (suggestion: SuggestionInfo) => {
+      if (columnFilter === 'all') return true
+      const col = getColumnForSuggestion(suggestion)
+      return col === columnFilter
+    }
+
+    const pending = curation.suggestions
+      .filter(s => isPending(curation.decisions, s))
+      .filter(filterByColumn)
+      .sort((a, b) => a.priority - b.priority)
+
+    const reviewed = curation.suggestions
+      .filter(s => !isPending(curation.decisions, s))
+      .filter(filterByColumn)
+
+    return { pendingSuggestions: pending, reviewedSuggestions: reviewed }
+  }, [curation, columnFilter, getColumnForSuggestion])
+
+  // Get visible suggestions in order (for keyboard navigation)
+  const visibleSuggestions = useMemo(() => {
+    if (!curation) return []
+
+    if (viewMode === 'grouped') {
+      // In grouped view, only show suggestions from expanded groups
+      const visible: SuggestionInfo[] = []
+      for (const group of groupedSuggestions) {
+        if (columnFilter !== 'all' && group.column !== columnFilter) continue
+        if (expandedGroups.has(group.column)) {
+          visible.push(...group.suggestions)
+        }
+      }
+      return visible
+    } else {
+      // In flat view, show filtered pending suggestions then reviewed
+      return [...pendingSuggestions, ...reviewedSuggestions]
+    }
+  }, [curation, viewMode, groupedSuggestions, expandedGroups, columnFilter, pendingSuggestions, reviewedSuggestions])
+
+  // Navigate to next/previous suggestion
+  const navigateToSuggestion = useCallback((direction: 'next' | 'prev') => {
+    if (visibleSuggestions.length === 0) return
+
+    const currentIndex = selectedSuggestionId
+      ? visibleSuggestions.findIndex(s => s.id === selectedSuggestionId)
+      : -1
+
+    let newIndex: number
+    if (direction === 'next') {
+      newIndex = currentIndex < visibleSuggestions.length - 1 ? currentIndex + 1 : 0
+    } else {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : visibleSuggestions.length - 1
+    }
+
+    const newSuggestion = visibleSuggestions[newIndex]
+    if (newSuggestion) {
+      setSelectedSuggestionId(newSuggestion.id)
+      // Scroll into view
+      const element = suggestionRefs.current.get(newSuggestion.id)
+      element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [visibleSuggestions, selectedSuggestionId])
+
+  // Accept/reject selected suggestion with keyboard
+  const acceptSelectedSuggestion = useCallback(() => {
+    if (!selectedSuggestionId || !curation) return
+    const suggestion = curation.suggestions.find(s => s.id === selectedSuggestionId)
+    if (!suggestion) return
+
+    // Only accept if pending
+    const decision = findDecision(curation.decisions, suggestion.id)
+    if (!decision || decision.status === 'pending') {
+      acceptMutation.mutate({ id: suggestion.id })
+    }
+  }, [selectedSuggestionId, curation, acceptMutation])
+
+  const rejectSelectedSuggestion = useCallback(() => {
+    if (!selectedSuggestionId || !curation) return
+    const suggestion = curation.suggestions.find(s => s.id === selectedSuggestionId)
+    if (!suggestion) return
+
+    // Only reject if pending
+    const decision = findDecision(curation.decisions, suggestion.id)
+    if (!decision || decision.status === 'pending') {
+      rejectMutation.mutate({ id: suggestion.id, notes: 'Rejected via keyboard' })
+    }
+  }, [selectedSuggestionId, curation, rejectMutation])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        return
+      }
+
+      // Undo/Redo: Ctrl+Z / Ctrl+Shift+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          handleRedo()
+        } else {
+          handleUndo()
+        }
+        return
+      }
+
+      // Navigation: Arrow keys or vim-style j/k
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault()
+        navigateToSuggestion('next')
+        return
+      }
+      if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault()
+        navigateToSuggestion('prev')
+        return
+      }
+
+      // Accept: Enter or 'a'
+      if (e.key === 'Enter' || e.key === 'a') {
+        e.preventDefault()
+        acceptSelectedSuggestion()
+        return
+      }
+
+      // Reject: 'r' or 'x'
+      if (e.key === 'r' || e.key === 'x') {
+        e.preventDefault()
+        rejectSelectedSuggestion()
+        return
+      }
+
+      // Deselect: Escape
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setSelectedSuggestionId(null)
+        return
+      }
+
+      // Toggle view mode: 'g'
+      if (e.key === 'g') {
+        e.preventDefault()
+        setViewMode(v => v === 'flat' ? 'grouped' : 'flat')
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleUndo, handleRedo, navigateToSuggestion, acceptSelectedSuggestion, rejectSelectedSuggestion])
+
   // Get highlighted rows and column based on selected suggestion
   const { highlightedRows, highlightedColumn } = useMemo(() => {
     if (!curation || !selectedSuggestionId) {
@@ -344,24 +483,6 @@ export default function App() {
       </div>
     )
   }
-
-  // Filter suggestions by column
-  const filterByColumn = (suggestion: SuggestionInfo) => {
-    if (columnFilter === 'all') return true
-    const col = getColumnForSuggestion(suggestion)
-    return col === columnFilter
-  }
-
-  const pendingSuggestions = curation.suggestions
-    .filter(s => isPending(curation.decisions, s))
-    .filter(filterByColumn)
-
-  const reviewedSuggestions = curation.suggestions
-    .filter(s => !isPending(curation.decisions, s))
-    .filter(filterByColumn)
-
-  // Sort pending by priority (lower = higher priority)
-  pendingSuggestions.sort((a, b) => a.priority - b.priority)
 
   // Count total pending (unfiltered) for header
   const totalPending = curation.suggestions.filter(s => isPending(curation.decisions, s)).length
@@ -504,6 +625,10 @@ export default function App() {
                       {group.suggestions.map((suggestion) => (
                         <div
                           key={suggestion.id}
+                          ref={(el) => {
+                            if (el) suggestionRefs.current.set(suggestion.id, el)
+                            else suggestionRefs.current.delete(suggestion.id)
+                          }}
                           onClick={() => setSelectedSuggestionId(
                             selectedSuggestionId === suggestion.id ? null : suggestion.id
                           )}
@@ -530,6 +655,10 @@ export default function App() {
                 {pendingSuggestions.map((suggestion) => (
                   <div
                     key={suggestion.id}
+                    ref={(el) => {
+                      if (el) suggestionRefs.current.set(suggestion.id, el)
+                      else suggestionRefs.current.delete(suggestion.id)
+                    }}
                     onClick={() => setSelectedSuggestionId(
                       selectedSuggestionId === suggestion.id ? null : suggestion.id
                     )}
@@ -560,6 +689,10 @@ export default function App() {
                   {reviewedSuggestions.map((suggestion) => (
                     <div
                       key={suggestion.id}
+                      ref={(el) => {
+                        if (el) suggestionRefs.current.set(suggestion.id, el)
+                        else suggestionRefs.current.delete(suggestion.id)
+                      }}
                       onClick={() => setSelectedSuggestionId(
                         selectedSuggestionId === suggestion.id ? null : suggestion.id
                       )}
