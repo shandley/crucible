@@ -1577,6 +1577,706 @@ impl Validator for DateFormatValidator {
     }
 }
 
+// ============================================================================
+// Regex Pattern Validator
+// ============================================================================
+
+/// Common patterns to check for based on column name or content.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum PatternType {
+    /// Email addresses
+    Email,
+    /// URLs
+    Url,
+    /// Identifier codes (alphanumeric with consistent format)
+    Identifier,
+    /// Phone numbers
+    Phone,
+    /// Postal/ZIP codes
+    PostalCode,
+}
+
+impl PatternType {
+    fn pattern(&self) -> &'static str {
+        match self {
+            PatternType::Email => r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            PatternType::Url => r"^https?://[^\s]+$",
+            PatternType::Identifier => r"^[A-Za-z]+[_-]?\d+$", // e.g., IBD001, SAMPLE_123
+            PatternType::Phone => r"^\+?[\d\s\-\(\)]{7,}$",
+            PatternType::PostalCode => r"^\d{5}(-\d{4})?$", // US ZIP codes
+        }
+    }
+
+    fn description(&self) -> &'static str {
+        match self {
+            PatternType::Email => "email address",
+            PatternType::Url => "URL",
+            PatternType::Identifier => "identifier code",
+            PatternType::Phone => "phone number",
+            PatternType::PostalCode => "postal code",
+        }
+    }
+
+    /// Infer pattern type from column name.
+    fn from_column_name(name: &str) -> Option<Self> {
+        let lower = name.to_lowercase();
+        if lower.contains("email") || lower.contains("e_mail") {
+            Some(PatternType::Email)
+        } else if lower.contains("url") || lower.contains("website") || lower.contains("link") {
+            Some(PatternType::Url)
+        } else if lower.contains("phone") || lower.contains("tel") || lower.contains("mobile") {
+            Some(PatternType::Phone)
+        } else if lower.contains("zip") || lower.contains("postal") {
+            Some(PatternType::PostalCode)
+        } else {
+            None
+        }
+    }
+}
+
+/// Validates values against expected patterns (email, URL, identifiers, etc.).
+pub struct RegexPatternValidator;
+
+impl Validator for RegexPatternValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            // Skip non-string columns
+            if col_schema.inferred_type != ColumnType::String {
+                continue;
+            }
+
+            // Check if column name suggests a pattern
+            if let Some(pattern_type) = PatternType::from_column_name(&col_schema.name) {
+                let issues = self.check_pattern(table, col_schema, pattern_type);
+                if let Some(obs) = issues {
+                    observations.push(obs);
+                }
+            }
+
+            // Check for identifier columns with inconsistent formats
+            if col_schema.semantic_role == SemanticRole::Identifier {
+                if let Some(obs) = self.check_identifier_consistency(table, col_schema) {
+                    observations.push(obs);
+                }
+            }
+        }
+
+        observations
+    }
+}
+
+impl RegexPatternValidator {
+    /// Check values against an expected pattern.
+    fn check_pattern(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+        pattern_type: PatternType,
+    ) -> Option<Observation> {
+        let pattern = regex::Regex::new(pattern_type.pattern()).ok()?;
+        let mut invalid_rows = Vec::new();
+        let mut invalid_examples = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            let trimmed = value.trim();
+            if DataTable::is_null_value(trimmed) || trimmed.is_empty() {
+                continue;
+            }
+
+            if !pattern.is_match(trimmed) {
+                invalid_rows.push(row_idx);
+                if invalid_examples.len() < 3 {
+                    invalid_examples.push(trimmed.to_string());
+                }
+            }
+        }
+
+        if invalid_rows.is_empty() {
+            return None;
+        }
+
+        let total_non_null: usize = table
+            .column_values(col_schema.position)
+            .filter(|v| !DataTable::is_null_value(v.trim()) && !v.trim().is_empty())
+            .count();
+        let pct = (invalid_rows.len() as f64 / total_non_null as f64) * 100.0;
+
+        // Only report if < 50% match (otherwise, pattern might not be applicable)
+        if pct > 50.0 {
+            return None;
+        }
+
+        Some(
+            Observation::new(
+                ObservationType::PatternViolation,
+                if pct > 10.0 {
+                    Severity::Warning
+                } else {
+                    Severity::Info
+                },
+                &col_schema.name,
+                format!(
+                    "{} value(s) ({:.1}%) don't match expected {} format: {:?}",
+                    invalid_rows.len(),
+                    pct,
+                    pattern_type.description(),
+                    invalid_examples
+                ),
+            )
+            .with_evidence(
+                Evidence::new()
+                    .with_occurrences(invalid_rows.len())
+                    .with_percentage(pct)
+                    .with_sample_rows(invalid_rows.into_iter().take(5).collect())
+                    .with_pattern(pattern_type.pattern().to_string()),
+            )
+            .with_confidence(0.75)
+            .with_detector("regex_pattern_validator"),
+        )
+    }
+
+    /// Check identifier columns for inconsistent formats.
+    fn check_identifier_consistency(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> Option<Observation> {
+        // Collect all unique patterns from the data
+        let mut pattern_counts: IndexMap<String, (usize, Vec<String>)> = IndexMap::new();
+
+        for value in table.column_values(col_schema.position) {
+            let trimmed = value.trim();
+            if DataTable::is_null_value(trimmed) || trimmed.is_empty() {
+                continue;
+            }
+
+            // Extract pattern: replace digits with # and letters with @
+            let pattern: String = trimmed
+                .chars()
+                .map(|c| {
+                    if c.is_ascii_digit() {
+                        '#'
+                    } else if c.is_ascii_alphabetic() {
+                        if c.is_uppercase() {
+                            'A'
+                        } else {
+                            'a'
+                        }
+                    } else {
+                        c
+                    }
+                })
+                .collect();
+
+            let entry = pattern_counts.entry(pattern).or_insert((0, Vec::new()));
+            entry.0 += 1;
+            if entry.1.len() < 2 {
+                entry.1.push(trimmed.to_string());
+            }
+        }
+
+        // If only one pattern or no patterns, no issue
+        if pattern_counts.len() <= 1 {
+            return None;
+        }
+
+        // Find dominant pattern
+        let total: usize = pattern_counts.values().map(|(c, _)| c).sum();
+        let (dominant_pattern, (dominant_count, _)) = pattern_counts
+            .iter()
+            .max_by_key(|(_, (c, _))| *c)?;
+
+        let dominant_pct = (*dominant_count as f64 / total as f64) * 100.0;
+
+        // Only report if there's a clear dominant pattern (>70%)
+        if dominant_pct < 70.0 {
+            return None;
+        }
+
+        // Collect non-dominant values
+        let mut outlier_rows = Vec::new();
+        let mut outlier_examples = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            let trimmed = value.trim();
+            if DataTable::is_null_value(trimmed) || trimmed.is_empty() {
+                continue;
+            }
+
+            let pattern: String = trimmed
+                .chars()
+                .map(|c| {
+                    if c.is_ascii_digit() {
+                        '#'
+                    } else if c.is_ascii_alphabetic() {
+                        if c.is_uppercase() {
+                            'A'
+                        } else {
+                            'a'
+                        }
+                    } else {
+                        c
+                    }
+                })
+                .collect();
+
+            if &pattern != dominant_pattern {
+                outlier_rows.push(row_idx);
+                if outlier_examples.len() < 3 {
+                    outlier_examples.push(trimmed.to_string());
+                }
+            }
+        }
+
+        if outlier_rows.is_empty() {
+            return None;
+        }
+
+        let outlier_pct = (outlier_rows.len() as f64 / total as f64) * 100.0;
+
+        // Get example of dominant pattern
+        let dominant_example = pattern_counts
+            .get(dominant_pattern)
+            .and_then(|(_, examples)| examples.first())
+            .cloned()
+            .unwrap_or_default();
+
+        Some(
+            Observation::new(
+                ObservationType::Inconsistency,
+                Severity::Warning,
+                &col_schema.name,
+                format!(
+                    "Identifier format inconsistency: {} value(s) ({:.1}%) don't match dominant pattern (e.g., '{}'): {:?}",
+                    outlier_rows.len(),
+                    outlier_pct,
+                    dominant_example,
+                    outlier_examples
+                ),
+            )
+            .with_evidence(
+                Evidence::new()
+                    .with_occurrences(outlier_rows.len())
+                    .with_percentage(outlier_pct)
+                    .with_sample_rows(outlier_rows.into_iter().take(5).collect())
+                    .with_value_counts(Some(json!(
+                        pattern_counts
+                            .iter()
+                            .map(|(p, (c, ex))| (p.clone(), json!({"count": c, "examples": ex})))
+                            .collect::<IndexMap<_, _>>()
+                    ))),
+            )
+            .with_confidence(0.80)
+            .with_detector("regex_pattern_validator"),
+        )
+    }
+}
+
+// ============================================================================
+// Cross-Column Validator
+// ============================================================================
+
+/// Validates logical relationships between columns.
+pub struct CrossColumnValidator;
+
+impl Validator for CrossColumnValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        // Check date relationships
+        observations.extend(self.check_date_relationships(table, schema));
+
+        // Check logical consistency (e.g., BMI vs weight/height)
+        observations.extend(self.check_bmi_consistency(table, schema));
+
+        // Check sex/pregnancy consistency
+        observations.extend(self.check_sex_pregnancy(table, schema));
+
+        // Check age-related constraints
+        observations.extend(self.check_age_constraints(table, schema));
+
+        observations
+    }
+}
+
+impl CrossColumnValidator {
+    /// Find column by name pattern (case-insensitive).
+    fn find_column<'a>(
+        schema: &'a TableSchema,
+        patterns: &[&str],
+    ) -> Option<&'a ColumnSchema> {
+        for col in &schema.columns {
+            let lower = col.name.to_lowercase();
+            for pattern in patterns {
+                if lower.contains(pattern) {
+                    return Some(col);
+                }
+            }
+        }
+        None
+    }
+
+    /// Check date column relationships (start < end, birth < death, etc.).
+    fn check_date_relationships(
+        &self,
+        table: &DataTable,
+        schema: &TableSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        // Common date pairs to check
+        let date_pairs = [
+            (
+                &["start_date", "start", "begin", "enrollment"][..],
+                &["end_date", "end", "finish", "completion"][..],
+                "start date should be before end date",
+            ),
+            (
+                &["birth", "dob", "date_of_birth"][..],
+                &["death", "dod", "date_of_death"][..],
+                "birth date should be before death date",
+            ),
+            (
+                &["admission", "admit"][..],
+                &["discharge"][..],
+                "admission should be before discharge",
+            ),
+            (
+                &["diagnosis_date", "dx_date"][..],
+                &["treatment_date", "tx_date"][..],
+                "diagnosis should typically precede treatment",
+            ),
+        ];
+
+        for (start_patterns, end_patterns, description) in &date_pairs {
+            let start_col = Self::find_column(schema, start_patterns);
+            let end_col = Self::find_column(schema, end_patterns);
+
+            if let (Some(start), Some(end)) = (start_col, end_col) {
+                let issues = self.compare_date_columns(table, start, end);
+                if !issues.is_empty() {
+                    let pct = (issues.len() as f64 / table.row_count() as f64) * 100.0;
+                    observations.push(
+                        Observation::new(
+                            ObservationType::CrossColumnInconsistency,
+                            Severity::Warning,
+                            &format!("{} vs {}", start.name, end.name),
+                            format!(
+                                "{} row(s) ({:.1}%) where {}: {}",
+                                issues.len(),
+                                pct,
+                                description,
+                                issues
+                                    .iter()
+                                    .take(2)
+                                    .map(|(r, s, e)| format!("row {}: {} > {}", r + 1, s, e))
+                                    .collect::<Vec<_>>()
+                                    .join("; ")
+                            ),
+                        )
+                        .with_evidence(
+                            Evidence::new()
+                                .with_occurrences(issues.len())
+                                .with_percentage(pct)
+                                .with_sample_rows(issues.iter().take(5).map(|(r, _, _)| *r).collect()),
+                        )
+                        .with_confidence(0.85)
+                        .with_detector("cross_column_validator"),
+                    );
+                }
+            }
+        }
+
+        observations
+    }
+
+    /// Compare two date columns and find violations.
+    fn compare_date_columns(
+        &self,
+        table: &DataTable,
+        start_col: &ColumnSchema,
+        end_col: &ColumnSchema,
+    ) -> Vec<(usize, String, String)> {
+        let mut issues = Vec::new();
+
+        for row_idx in 0..table.row_count() {
+            let start_val = table.get(row_idx, start_col.position).unwrap_or_default();
+            let end_val = table.get(row_idx, end_col.position).unwrap_or_default();
+
+            if DataTable::is_null_value(start_val) || DataTable::is_null_value(end_val) {
+                continue;
+            }
+
+            // Try to parse dates and compare
+            if let (Some(start_date), Some(end_date)) =
+                (self.parse_date(start_val), self.parse_date(end_val))
+            {
+                if start_date > end_date {
+                    issues.push((row_idx, start_val.to_string(), end_val.to_string()));
+                }
+            }
+        }
+
+        issues
+    }
+
+    /// Simple date parser that returns a comparable string (YYYY-MM-DD format).
+    fn parse_date(&self, value: &str) -> Option<String> {
+        let trimmed = value.trim();
+
+        // ISO format: YYYY-MM-DD
+        if trimmed.len() == 10 && trimmed.chars().nth(4) == Some('-') {
+            return Some(trimmed.to_string());
+        }
+
+        // Try other common formats
+        // MM/DD/YYYY or DD/MM/YYYY - assume MM/DD/YYYY for US
+        if let Some(parts) = trimmed.split('/').collect::<Vec<_>>().get(0..3) {
+            if parts.len() == 3 {
+                let (p1, p2, p3) = (parts[0], parts[1], parts[2]);
+                if p3.len() == 4 {
+                    return Some(format!("{}-{:0>2}-{:0>2}", p3, p1, p2));
+                }
+            }
+        }
+
+        // Just use string comparison as fallback
+        Some(trimmed.to_string())
+    }
+
+    /// Check BMI vs weight/height consistency.
+    fn check_bmi_consistency(
+        &self,
+        table: &DataTable,
+        schema: &TableSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        let bmi_col = Self::find_column(schema, &["bmi"]);
+        let weight_col = Self::find_column(schema, &["weight", "wt"]);
+        let height_col = Self::find_column(schema, &["height", "ht"]);
+
+        if let (Some(bmi), Some(weight), Some(height)) = (bmi_col, weight_col, height_col) {
+            let issues = self.check_bmi_calculation(table, bmi, weight, height);
+            if !issues.is_empty() {
+                let pct = (issues.len() as f64 / table.row_count() as f64) * 100.0;
+                observations.push(
+                    Observation::new(
+                        ObservationType::CrossColumnInconsistency,
+                        Severity::Warning,
+                        &format!("{} vs {}/{}", bmi.name, weight.name, height.name),
+                        format!(
+                            "{} row(s) ({:.1}%) where BMI doesn't match weight/height calculation (assuming kg/m)",
+                            issues.len(),
+                            pct
+                        ),
+                    )
+                    .with_evidence(
+                        Evidence::new()
+                            .with_occurrences(issues.len())
+                            .with_percentage(pct)
+                            .with_sample_rows(issues.into_iter().take(5).collect()),
+                    )
+                    .with_confidence(0.70)
+                    .with_detector("cross_column_validator"),
+                );
+            }
+        }
+
+        observations
+    }
+
+    /// Check if BMI matches weight/height.
+    fn check_bmi_calculation(
+        &self,
+        table: &DataTable,
+        bmi_col: &ColumnSchema,
+        weight_col: &ColumnSchema,
+        height_col: &ColumnSchema,
+    ) -> Vec<usize> {
+        let mut issues = Vec::new();
+
+        for row_idx in 0..table.row_count() {
+            let bmi_str = table.get(row_idx, bmi_col.position).unwrap_or_default();
+            let weight_str = table.get(row_idx, weight_col.position).unwrap_or_default();
+            let height_str = table.get(row_idx, height_col.position).unwrap_or_default();
+
+            if DataTable::is_null_value(bmi_str)
+                || DataTable::is_null_value(weight_str)
+                || DataTable::is_null_value(height_str)
+            {
+                continue;
+            }
+
+            if let (Ok(bmi), Ok(weight), Ok(height)) = (
+                bmi_str.trim().parse::<f64>(),
+                weight_str.trim().parse::<f64>(),
+                height_str.trim().parse::<f64>(),
+            ) {
+                if height <= 0.0 || weight <= 0.0 {
+                    continue;
+                }
+
+                // Calculate expected BMI (assuming height in meters, weight in kg)
+                // If height > 3, assume it's in cm
+                let height_m = if height > 3.0 { height / 100.0 } else { height };
+                let expected_bmi = weight / (height_m * height_m);
+
+                // Allow 10% tolerance
+                let diff_pct = ((bmi - expected_bmi) / expected_bmi).abs() * 100.0;
+                if diff_pct > 10.0 {
+                    issues.push(row_idx);
+                }
+            }
+        }
+
+        issues
+    }
+
+    /// Check sex/pregnancy logical consistency.
+    fn check_sex_pregnancy(
+        &self,
+        table: &DataTable,
+        schema: &TableSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        let sex_col = Self::find_column(schema, &["sex", "gender"]);
+        let pregnant_col = Self::find_column(schema, &["pregnant", "pregnancy"]);
+
+        if let (Some(sex), Some(pregnant)) = (sex_col, pregnant_col) {
+            let mut issues = Vec::new();
+
+            for row_idx in 0..table.row_count() {
+                let sex_val = table.get(row_idx, sex.position).unwrap_or_default().to_lowercase();
+                let preg_val = table
+                    .get(row_idx, pregnant.position)
+                    .unwrap_or_default()
+                    .to_lowercase();
+
+                let is_male = sex_val.contains("male") && !sex_val.contains("female")
+                    || sex_val == "m";
+                let is_pregnant = preg_val == "yes"
+                    || preg_val == "y"
+                    || preg_val == "true"
+                    || preg_val == "1";
+
+                if is_male && is_pregnant {
+                    issues.push(row_idx);
+                }
+            }
+
+            if !issues.is_empty() {
+                let pct = (issues.len() as f64 / table.row_count() as f64) * 100.0;
+                observations.push(
+                    Observation::new(
+                        ObservationType::CrossColumnInconsistency,
+                        Severity::Error,
+                        &format!("{} vs {}", sex.name, pregnant.name),
+                        format!(
+                            "{} row(s) ({:.1}%) where male is marked as pregnant",
+                            issues.len(),
+                            pct
+                        ),
+                    )
+                    .with_evidence(
+                        Evidence::new()
+                            .with_occurrences(issues.len())
+                            .with_percentage(pct)
+                            .with_sample_rows(issues.into_iter().take(5).collect()),
+                    )
+                    .with_confidence(0.95)
+                    .with_detector("cross_column_validator"),
+                );
+            }
+        }
+
+        observations
+    }
+
+    /// Check age-related constraints.
+    fn check_age_constraints(
+        &self,
+        table: &DataTable,
+        schema: &TableSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        let age_col = Self::find_column(schema, &["age"]);
+
+        if let Some(age) = age_col {
+            // Check for pediatric-only or adult-only conditions
+            let diagnosis_col = Self::find_column(schema, &["diagnosis", "dx", "condition"]);
+
+            if let Some(dx) = diagnosis_col {
+                // Conditions that are unusual in certain age groups
+                let adult_conditions = ["type 2 diabetes", "t2d", "menopause", "prostate"];
+                let pediatric_max_age = 12;
+
+                let mut issues = Vec::new();
+
+                for row_idx in 0..table.row_count() {
+                    let age_str = table.get(row_idx, age.position).unwrap_or_default();
+                    let dx_val = table
+                        .get(row_idx, dx.position)
+                        .unwrap_or_default()
+                        .to_lowercase();
+
+                    if DataTable::is_null_value(age_str) {
+                        continue;
+                    }
+
+                    if let Ok(age_val) = age_str.trim().parse::<i32>() {
+                        // Check adult conditions in young children
+                        if age_val <= pediatric_max_age {
+                            for condition in &adult_conditions {
+                                if dx_val.contains(condition) {
+                                    issues.push((row_idx, age_val, dx_val.clone()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !issues.is_empty() {
+                    let pct = (issues.len() as f64 / table.row_count() as f64) * 100.0;
+                    observations.push(
+                        Observation::new(
+                            ObservationType::CrossColumnInconsistency,
+                            Severity::Warning,
+                            &format!("{} vs {}", age.name, dx.name),
+                            format!(
+                                "{} row(s) ({:.1}%) with unusual age/diagnosis combination: {}",
+                                issues.len(),
+                                pct,
+                                issues
+                                    .iter()
+                                    .take(2)
+                                    .map(|(_, a, d)| format!("age {} with '{}'", a, d))
+                                    .collect::<Vec<_>>()
+                                    .join("; ")
+                            ),
+                        )
+                        .with_evidence(
+                            Evidence::new()
+                                .with_occurrences(issues.len())
+                                .with_percentage(pct)
+                                .with_sample_rows(issues.iter().take(5).map(|(r, _, _)| *r).collect()),
+                        )
+                        .with_confidence(0.70)
+                        .with_detector("cross_column_validator"),
+                    );
+                }
+            }
+        }
+
+        observations
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -1600,6 +2300,8 @@ impl ValidationEngine {
                 Box::new(SemanticEquivalenceValidator::default()),
                 Box::new(DateFormatValidator),
                 Box::new(MissingPatternValidator::default()),
+                Box::new(RegexPatternValidator),
+                Box::new(CrossColumnValidator),
             ],
         }
     }
@@ -1700,5 +2402,80 @@ mod tests {
         assert_eq!(observations.len(), 1);
         assert_eq!(observations[0].observation_type, ObservationType::MissingPattern);
         assert!(observations[0].description.contains("missing"));
+    }
+
+    #[test]
+    fn test_regex_pattern_validator_email() {
+        let table = make_table(
+            vec!["email"],
+            vec![
+                vec!["user@example.com"],
+                vec!["test@domain.org"],
+                vec!["invalid-email"],
+                vec!["another@valid.net"],
+            ],
+        );
+        let schema = make_simple_schema(vec![("email", ColumnType::String)]);
+
+        let validator = RegexPatternValidator;
+        let observations = validator.validate(&table, &schema);
+
+        assert_eq!(observations.len(), 1);
+        assert_eq!(observations[0].observation_type, ObservationType::PatternViolation);
+        assert!(observations[0].description.contains("email"));
+    }
+
+    #[test]
+    fn test_cross_column_validator_dates() {
+        let table = make_table(
+            vec!["start_date", "end_date"],
+            vec![
+                vec!["2024-01-01", "2024-12-31"],
+                vec!["2024-06-15", "2024-03-01"],  // Invalid: end before start
+                vec!["2024-02-01", "2024-05-15"],
+            ],
+        );
+
+        let schema = TableSchema::with_columns(vec![
+            ColumnSchema {
+                name: "start_date".to_string(),
+                position: 0,
+                inferred_type: ColumnType::Date,
+                semantic_type: SemanticType::Unknown,
+                semantic_role: SemanticRole::Unknown,
+                nullable: false,
+                unique: false,
+                expected_values: None,
+                expected_range: None,
+                constraints: Vec::new(),
+                statistics: ColumnStatistics::default(),
+                confidence: 0.9,
+                inference_sources: vec!["test".to_string()],
+                llm_insight: None,
+            },
+            ColumnSchema {
+                name: "end_date".to_string(),
+                position: 1,
+                inferred_type: ColumnType::Date,
+                semantic_type: SemanticType::Unknown,
+                semantic_role: SemanticRole::Unknown,
+                nullable: false,
+                unique: false,
+                expected_values: None,
+                expected_range: None,
+                constraints: Vec::new(),
+                statistics: ColumnStatistics::default(),
+                confidence: 0.9,
+                inference_sources: vec!["test".to_string()],
+                llm_insight: None,
+            },
+        ]);
+
+        let validator = CrossColumnValidator;
+        let observations = validator.validate(&table, &schema);
+
+        assert_eq!(observations.len(), 1);
+        assert_eq!(observations[0].observation_type, ObservationType::CrossColumnInconsistency);
+        assert!(observations[0].description.contains("start date"));
     }
 }

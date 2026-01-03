@@ -26,6 +26,10 @@ pub enum ObservationType {
     Cardinality,
     /// Cross-column rule violation.
     CrossColumn,
+    /// Value doesn't match expected pattern (email, URL, identifier format).
+    PatternViolation,
+    /// Logical inconsistency between related columns.
+    CrossColumnInconsistency,
 }
 
 impl ObservationType {
@@ -41,6 +45,8 @@ impl ObservationType {
             ObservationType::Completeness => "Completeness Issue",
             ObservationType::Cardinality => "Cardinality Issue",
             ObservationType::CrossColumn => "Cross-Column Issue",
+            ObservationType::PatternViolation => "Pattern Violation",
+            ObservationType::CrossColumnInconsistency => "Cross-Column Inconsistency",
         }
     }
 }
