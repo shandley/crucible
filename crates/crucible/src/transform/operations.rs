@@ -114,6 +114,31 @@ pub struct TransformChange {
 
     /// Number of values changed.
     pub values_changed: usize,
+
+    /// Per-row audit information.
+    pub row_audits: Vec<RowAudit>,
+}
+
+/// Audit information for a single row change.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RowAudit {
+    /// Row index (0-based).
+    pub row: usize,
+
+    /// Column that was changed.
+    pub column: String,
+
+    /// Original value before transformation.
+    pub original_value: String,
+
+    /// New value after transformation.
+    pub new_value: String,
+
+    /// Type of transformation applied.
+    pub transform_type: String,
+
+    /// Reason for the change.
+    pub reason: String,
 }
 
 impl TransformResult {

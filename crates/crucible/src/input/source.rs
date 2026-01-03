@@ -162,4 +162,52 @@ impl DataTable {
 
         Ok(())
     }
+
+    /// Write the table to a JSON file.
+    ///
+    /// Outputs an array of objects where each object represents a row
+    /// with column names as keys.
+    pub fn write_to_json(&self, path: &std::path::Path) -> std::io::Result<()> {
+        use std::io::Write;
+        let mut file = std::fs::File::create(path)?;
+
+        let json = self.to_json_value();
+        let json_str = serde_json::to_string_pretty(&json)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        file.write_all(json_str.as_bytes())?;
+        Ok(())
+    }
+
+    /// Convert the table to a JSON Value (array of objects).
+    pub fn to_json_value(&self) -> serde_json::Value {
+        let rows: Vec<serde_json::Value> = self
+            .rows
+            .iter()
+            .map(|row| {
+                let mut obj = serde_json::Map::new();
+                for (i, header) in self.headers.iter().enumerate() {
+                    let value = row.get(i).map(|s| s.as_str()).unwrap_or("");
+                    // Try to parse as number or boolean, otherwise use string
+                    let json_value = if value.is_empty() || Self::is_null_value(value) {
+                        serde_json::Value::Null
+                    } else if let Ok(n) = value.parse::<i64>() {
+                        serde_json::Value::Number(n.into())
+                    } else if let Ok(n) = value.parse::<f64>() {
+                        serde_json::json!(n)
+                    } else if value.eq_ignore_ascii_case("true") {
+                        serde_json::Value::Bool(true)
+                    } else if value.eq_ignore_ascii_case("false") {
+                        serde_json::Value::Bool(false)
+                    } else {
+                        serde_json::Value::String(value.to_string())
+                    };
+                    obj.insert(header.clone(), json_value);
+                }
+                serde_json::Value::Object(obj)
+            })
+            .collect();
+
+        serde_json::Value::Array(rows)
+    }
 }

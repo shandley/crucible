@@ -4,4 +4,4 @@ mod engine;
 mod operations;
 
 pub use engine::TransformEngine;
-pub use operations::{TransformOperation, TransformResult};
+pub use operations::{RowAudit, TransformChange, TransformOperation, TransformResult};

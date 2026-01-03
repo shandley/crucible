@@ -10,7 +10,7 @@ use crate::input::DataTable;
 use crate::suggestion::SuggestionAction;
 use crate::validation::ObservationType;
 
-use super::operations::{TransformChange, TransformOperation, TransformResult};
+use super::operations::{RowAudit, TransformChange, TransformOperation, TransformResult};
 
 /// Engine for applying transformations to data based on curation decisions.
 pub struct TransformEngine;
@@ -476,6 +476,7 @@ impl TransformEngine {
                 description: format!("Skipped: {}", reason),
                 column: String::new(),
                 values_changed: 0,
+                row_audits: Vec::new(),
             }),
         }
     }
@@ -492,9 +493,19 @@ impl TransformEngine {
         })?;
 
         let mut changed = 0;
+        let mut row_audits = Vec::new();
+
         for row_idx in 0..data.row_count() {
             let value = data.get(row_idx, col_idx).unwrap_or_default().to_string();
             if let Some(new_value) = mapping.get(&value) {
+                row_audits.push(RowAudit {
+                    row: row_idx,
+                    column: column.to_string(),
+                    original_value: value.clone(),
+                    new_value: new_value.clone(),
+                    transform_type: "standardize".to_string(),
+                    reason: format!("Normalized '{}' to '{}'", value, new_value),
+                });
                 data.set(row_idx, col_idx, new_value.clone());
                 changed += 1;
             }
@@ -510,6 +521,7 @@ impl TransformEngine {
             description: format!("Standardized '{}': {}", column, examples.join(", ")),
             column: column.to_string(),
             values_changed: changed,
+            row_audits,
         })
     }
 
@@ -528,10 +540,19 @@ impl TransformEngine {
         }
 
         let flag_col_idx = data.column_index(flag_column).unwrap();
+        let mut row_audits = Vec::new();
 
         // Set flag values for specified rows
         for &row_idx in rows {
             if row_idx < data.row_count() {
+                row_audits.push(RowAudit {
+                    row: row_idx,
+                    column: flag_column.to_string(),
+                    original_value: String::new(),
+                    new_value: flag_value.to_string(),
+                    transform_type: "flag".to_string(),
+                    reason: format!("Flagged for review: issue in '{}'", source_column),
+                });
                 data.set(row_idx, flag_col_idx, flag_value.to_string());
             }
         }
@@ -545,6 +566,7 @@ impl TransformEngine {
             ),
             column: flag_column.to_string(),
             values_changed: rows.len(),
+            row_audits,
         })
     }
 
@@ -560,10 +582,20 @@ impl TransformEngine {
         })?;
 
         let mut changed = 0;
+        let mut row_audits = Vec::new();
+
         for row_idx in 0..data.row_count() {
             let value = data.get(row_idx, col_idx).unwrap_or_default().to_string();
             let lower = value.to_lowercase();
             if values.iter().any(|v| v.to_lowercase() == lower) {
+                row_audits.push(RowAudit {
+                    row: row_idx,
+                    column: column.to_string(),
+                    original_value: value.clone(),
+                    new_value: String::new(),
+                    transform_type: "convert_na".to_string(),
+                    reason: format!("Converted '{}' to NA (missing value pattern)", value),
+                });
                 data.set(row_idx, col_idx, String::new());
                 changed += 1;
             }
@@ -573,6 +605,7 @@ impl TransformEngine {
             description: format!("Converted {:?} to NA in '{}'", values, column),
             column: column.to_string(),
             values_changed: changed,
+            row_audits,
         })
     }
 
@@ -589,6 +622,8 @@ impl TransformEngine {
         })?;
 
         let mut changed = 0;
+        let mut row_audits = Vec::new();
+
         for &row_idx in rows {
             if row_idx >= data.row_count() {
                 continue;
@@ -642,11 +677,30 @@ impl TransformEngine {
             };
 
             match coerced {
-                Some(new_value) if new_value != trimmed => {
-                    data.set(row_idx, col_idx, new_value);
+                Some(ref new_value) if new_value != trimmed => {
+                    row_audits.push(RowAudit {
+                        row: row_idx,
+                        column: column.to_string(),
+                        original_value: trimmed.to_string(),
+                        new_value: new_value.clone(),
+                        transform_type: "coerce".to_string(),
+                        reason: format!("Coerced '{}' to {} type", trimmed, target_type),
+                    });
+                    data.set(row_idx, col_idx, new_value.clone());
                     changed += 1;
                 }
                 None => {
+                    row_audits.push(RowAudit {
+                        row: row_idx,
+                        column: column.to_string(),
+                        original_value: trimmed.to_string(),
+                        new_value: String::new(),
+                        transform_type: "coerce".to_string(),
+                        reason: format!(
+                            "Converted '{}' to NA (could not coerce to {})",
+                            trimmed, target_type
+                        ),
+                    });
                     // Convert non-coercible values to NA
                     data.set(row_idx, col_idx, String::new());
                     changed += 1;
@@ -662,6 +716,7 @@ impl TransformEngine {
             ),
             column: column.to_string(),
             values_changed: changed,
+            row_audits,
         })
     }
 }

@@ -1,0 +1,66 @@
+[
+  {
+    "age": 45,
+    "bmi": 23.5,
+    "diagnosis": "CD",
+    "sample_id": "IBD001",
+    "treatment": "Infliximab",
+    "visit_date": "2024-01-15"
+  },
+  {
+    "age": 52,
+    "bmi": 27.1,
+    "diagnosis": "CD",
+    "sample_id": "IBD002",
+    "treatment": "adalimumab",
+    "visit_date": "2024/02/20"
+  },
+  {
+    "age": 38,
+    "bmi": 21.8,
+    "diagnosis": "CD",
+    "sample_id": "IBD003",
+    "treatment": "Infliximab",
+    "visit_date": "15-Mar-2024"
+  },
+  {
+    "age": 41,
+    "bmi": 24.2,
+    "diagnosis": "UC",
+    "sample_id": "IBD004",
+    "treatment": "Vedolizumab",
+    "visit_date": "2024-04-10"
+  },
+  {
+    "age": 29,
+    "bmi": -5.2,
+    "diagnosis": "UC",
+    "sample_id": "IBD005",
+    "treatment": "mesalamine",
+    "visit_date": "April 5, 2024"
+  },
+  {
+    "age": 55,
+    "bmi": 26.8,
+    "diagnosis": "CD",
+    "sample_id": "IBD006",
+    "treatment": "Ustekinumab",
+    "visit_date": "2024-05-22"
+  },
+  {
+    "age": 44,
+    "bmi": 22.9,
+    "diagnosis": "CD",
+    "sample_id": "IBD007",
+    "treatment": "Infliximab",
+    "visit_date": "2024-06-18"
+  },
+  {
+    "age": 33,
+    "bmi": 28.5,
+    "diagnosis": "UC",
+    "sample_id": "IBD008",
+    "treatment": "Vedolizumab",
+    "visit_date": "2024-07-03"
+  }
+]
