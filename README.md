@@ -104,35 +104,63 @@ println!("Recommendation: {}", result.summary.recommendation);
 let json = serde_json::to_string_pretty(&result)?;
 ```
 
-### Phase 1 Features
+### Core Features
 
 - **Type Inference**: Integer, Float, String, Boolean, Date, DateTime
 - **Semantic Role Detection**: Identifier, Grouping, Covariate, Outcome, Metadata
 - **Delimiter Detection**: Auto-detect CSV, TSV, semicolon, pipe
-- **Missing Value Detection**: NA, N/A, null, empty, and custom patterns like "missing"
+- **Missing Value Detection**: NA, N/A, null, empty, and custom patterns
 - **Outlier Detection**: IQR and z-score methods
-- **Consistency Checks**: Boolean format variations, case inconsistencies
-- **Data Quality Scoring**: Automated quality assessment with recommendations
+- **Consistency Checks**: Boolean format, case variations, typos
+- **Date Format Standardization**: ISO 8601 conversion
+- **LLM-Enhanced Analysis**: Anthropic, OpenAI, Ollama support
+- **Data Quality Scoring**: Automated assessment with recommendations
 
-### Future Phases
+### Coming Next
 
-**Phase 2**: LLM integration for enhanced inference and explanations
-**Phase 3**: Full curation layer with accept/reject workflow
-**Phase 4**: CLI and export functionality
-**Phase 5**: Python bindings
+**Phase 5**: Python bindings (PyO3, pip package)
+**Phase 6**: Polish (documentation, benchmarks, streaming)
 
-### CLI (Coming in Phase 4)
+### CLI
 
 ```bash
 # Analyze and generate curation layer
-crucible analyze metadata.tsv -o curation.json
+crucible analyze metadata.tsv
+# Creates metadata.curation.json
 
-# Interactive review
-crucible review curation.json
+# Analyze with LLM enhancement
+crucible analyze metadata.tsv --llm anthropic
 
-# Apply and export
-crucible apply curation.json --output metadata_curated.tsv
+# Interactive web review (opens browser)
+crucible review metadata.tsv
+# Opens http://localhost:3141 with React UI
+
+# Check curation progress
+crucible status metadata.curation.json
+
+# Preview changes before applying
+crucible diff metadata.curation.json
+
+# Batch accept/reject by type or column
+crucible batch metadata.curation.json --accept --action-type standardize
+crucible batch metadata.curation.json --reject --column diagnosis
+
+# Apply and export curated data
+crucible apply metadata.curation.json -o curated.tsv --format tsv
+
+# Export formats: tsv, csv, json, parquet (with --features parquet)
+crucible apply metadata.curation.json -o curated.json --format json
 ```
+
+### Web UI Features
+
+The interactive review UI (`crucible review`) provides:
+- **Suggestion cards** with accept/reject/modify buttons
+- **Data preview** with affected row highlighting
+- **Column-based grouping** with collapsible sections
+- **Keyboard navigation** (j/k, Enter, Escape, Ctrl+Z)
+- **Batch operations** (Accept All, Reject All per column)
+- **Auto-save** with progress indicator
 
 ## Integration
 
@@ -143,15 +171,15 @@ Crucible is designed to be domain-agnostic. Domain-specific wrappers add context
 
 ## Status
 
-**Phase 1 Complete.** Core inference engine with statistical and semantic analysis.
+**Phase 4 Complete.** Full CLI with web UI for interactive curation.
 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | Phase 1 | **Complete** | Foundation: type inference, schema detection, validation |
-| Phase 2 | Planned | LLM integration for enhanced inference |
-| Phase 3 | Planned | Full curation layer with persistence |
-| Phase 4 | Planned | CLI and export functionality |
-| Phase 5 | Planned | Python bindings |
+| Phase 2 | **Complete** | LLM integration (Anthropic, OpenAI, Ollama) |
+| Phase 3 | **Complete** | Curation layer with persistence |
+| Phase 4 | **Complete** | CLI + Web UI + export functionality |
+| Phase 5 | Next | Python bindings |
 | Phase 6 | Planned | Polish and optimization |
 
 See planning documents:

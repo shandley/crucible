@@ -8,8 +8,8 @@ Development is organized into phases, each producing a usable artifact. The LLM 
 Phase 1: Foundation        [Core types, basic inference, no LLM]        ✅ COMPLETE
 Phase 2: LLM Integration   [LLM-enhanced inference and suggestions]     ✅ COMPLETE
 Phase 3: Curation Layer    [Full spec implementation, persistence]      ✅ COMPLETE
-Phase 4: Application       [Export, CLI, audit trail]                   ← NEXT
-Phase 5: Python Bindings   [PyO3, pip package]
+Phase 4: Application       [CLI, Web UI, export, audit trail]           ✅ COMPLETE
+Phase 5: Python Bindings   [PyO3, pip package]                          ← NEXT
 Phase 6: Polish            [Documentation, testing, optimization]
 ```
 
@@ -178,50 +178,73 @@ println!("Pending: {}", curation.pending_suggestions().len());
 
 ---
 
-## Phase 4: Application
+## Phase 4: Application ✅ COMPLETE
 
-**Goal**: Apply curations and export cleaned data.
+**Goal**: Apply curations and export cleaned data with CLI and web UI.
 
 ### Deliverables
 
-- [ ] Curation applicator
-  - [ ] Apply accepted suggestions to data
-  - [ ] Non-destructive (produces new file)
-  - [ ] Audit trail in output
-- [ ] Export formats
-  - [ ] CSV/TSV export
-  - [ ] JSON export
-  - [ ] Audit metadata (what was changed)
-- [ ] CLI application
-  - [ ] `crucible analyze <file>` - Generate curation layer
-  - [ ] `crucible review <curation>` - Interactive review (TUI?)
-  - [ ] `crucible apply <curation>` - Export curated data
-  - [ ] `crucible status <curation>` - Summary report
-- [ ] Batch processing
-  - [ ] Multiple files
-  - [ ] Directory scanning
+- [x] Curation applicator
+  - [x] Apply accepted suggestions to data (TransformEngine)
+  - [x] Non-destructive (produces new file)
+  - [x] Audit trail in output (JSON audit log)
+- [x] Export formats
+  - [x] TSV/CSV export
+  - [x] JSON export
+  - [x] Parquet export (optional feature)
+  - [x] Audit metadata (transformations applied)
+- [x] CLI application (`crucible-cli` crate)
+  - [x] `crucible analyze <file>` - Generate curation layer
+  - [x] `crucible review <file>` - Interactive web UI review
+  - [x] `crucible apply <curation>` - Export curated data
+  - [x] `crucible status <file>` - Summary report
+  - [x] `crucible diff <curation>` - Preview changes
+  - [x] `crucible batch <curation>` - Batch accept/reject by type or column
+- [x] Web UI (React + TypeScript + Vite)
+  - [x] Suggestion cards with accept/reject/modify
+  - [x] Data preview with row highlighting
+  - [x] Column-based suggestion grouping
+  - [x] Keyboard navigation (j/k, Enter, Escape)
+  - [x] Undo/redo (Ctrl+Z, Ctrl+Shift+Z)
+  - [x] Column filtering
+  - [x] Progress persistence with auto-save indicator
+  - [x] Batch operations (Accept All, Reject All per column)
+- [x] Multi-provider LLM support
+  - [x] Anthropic Claude
+  - [x] OpenAI GPT
+  - [x] Ollama (local models)
+  - [x] Mock provider for testing
 
 ### Exit Criteria
 
 ```bash
-# Analyze
-crucible analyze metadata.tsv -o metadata.curation.json
+# Analyze with LLM enhancement
+crucible analyze metadata.tsv --llm anthropic
 
-# Review (shows summary, pending suggestions)
+# Interactive web review
+crucible review metadata.tsv
+# Opens browser at http://localhost:3141
+
+# Check status
 crucible status metadata.curation.json
 
-# Apply and export
-crucible apply metadata.curation.json -o metadata_curated.tsv
+# Preview changes
+crucible diff metadata.curation.json
 
-# Verify
-diff metadata.tsv metadata_curated.tsv
+# Batch operations
+crucible batch metadata.curation.json --accept --action-type standardize
+
+# Apply and export
+crucible apply metadata.curation.json -o metadata_curated.tsv --format tsv
 ```
 
-### Estimated Scope
+### Actual Scope
 
-- ~10 additional source files
-- ~1500-2000 lines of Rust
-- CLI integration tests
+- 15 new source files in `crates/crucible-cli/`
+- ~3000 lines of Rust (CLI + server)
+- ~2000 lines of TypeScript/React (frontend)
+- Embedded web assets via rust-embed
+- Axum web server with REST API
 
 ---
 
