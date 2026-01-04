@@ -1,0 +1,11 @@
+sample_name	sample_title	organism	collection_date	geo_loc_name	lat_lon	isolation_source	host	env_broad_scale	env_local_scale	env_medium
+MICRO001	Gut sample from healthy adult	Homo sapiens gut metagenome	2023-05-15	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat [ENVO:00009003]	human gut [UBERON:0001555]	fecal material
+MICRO002	Gut sample from IBD patient	H. sapiens gut metagenome	05/20/2023	USA: California	37.7749N 122.4194W	Human Gut	homo sapiens	human associated	gut	feces
+MICRO003	Gut sample from healthy adult	Homo sapiens gut metagenome	May 25, 2023	California, USA	missing	human gut	Homo Sapiens	ENVO:00009003	UBERON:0001555	fecal material
+MICRO004	Gut sample from UC patient	human gut metagenome	2023-05-30	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO005	Gut sample from CD patient	Homo sapiens gut metagenome	2023-06-01	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO006	Gut sample from healthy adult	Homo sapiens gut metagenome	2023-06-05	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO007	Gut sample from healthy adult	E. coli	2023-06-10	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO008	Gut sample from healthy adult	Homo sapiens gut metagenome	NA	USA: California	N/A	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO009	Gut sample from healthy adult	Homo sapiens gut metagenome	2023-06-15	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material
+MICRO010	Gut sample from healthy adult	Homo sapiens gut metagenome	2023-06-15	USA: California	37.7749 -122.4194	human gut	Homo sapiens	human-associated habitat	human gut	fecal material

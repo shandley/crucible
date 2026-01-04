@@ -1,0 +1,11 @@
+sample_name	organism	collection_date	geo_loc_name	lat_lon	depth	env_broad_scale	env_local_scale	env_medium	isolation_source
+ENV001	soil metagenome	2023-04-10	USA: Missouri	38.6270 -90.1994	0-10 cm	terrestrial biome [ENVO:00000446]	agricultural soil [ENVO:00002259]	soil [ENVO:00001998]	agricultural field soil
+ENV002	soil metagenome	04/15/2023	Missouri, USA	38.6270N 90.1994W	10-20cm	terrestrial	soil	soil	field soil
+ENV003	soil metagenome	2023-04-20	USA: Missouri	missing	0-10 cm	ENVO:00000446	ENVO:00002259	ENVO:00001998	agricultural soil
+ENV004	water metagenome	2023-04-25	USA: Missouri	38.6270 -90.1994	5m	aquatic biome	river water	fresh water	Missouri River
+ENV005	water metagenome	2023-04-30	USA: Missouri	38.6270 -90.1994	5m	aquatic biome [ENVO:00002030]	river [ENVO:00000022]	fresh water [ENVO:00002011]	Missouri River
+ENV006	sediment metagenome	2023-05-01	USA: Missouri	38.6270 -90.1994	NA	aquatic biome	river sediment	sediment	river bottom
+ENV007	Bacillus subtilis	2023-05-05	USA: Missouri	38.6270 -90.1994	0-5 cm	terrestrial biome	agricultural soil	soil	isolated from wheat rhizosphere
+ENV008	B. subtilis	2023-05-10	USA: Missouri	38.6270 -90.1994	0-5 cm	terrestrial biome	agricultural soil	soil	wheat rhizosphere
+ENV009	Pseudomonas fluorescens	2023-05-15	USA: Missouri	38.6270 -90.1994	0-5 cm	terrestrial biome	agricultural soil	soil	soybean rhizosphere
+ENV010	uncultured bacterium	n/a	USA: Missouri	not applicable	unknown	terrestrial biome	agricultural soil	soil	bulk soil

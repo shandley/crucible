@@ -166,6 +166,52 @@ PROPTEST_CASES=10000 cargo test -p crucible --test property_tests
 - Short SRA accessions (< 6 digits) never match SraRun type
 - Taxonomy abbreviations with various punctuation don't panic
 
+### 6. Real-World Validation Tests (14 tests)
+
+Real-world validation tests verify Crucible against datasets that mirror actual NCBI/EBI submission problems. These tests ensure Crucible detects issues that commonly cause submission rejections.
+
+```
+test_data/real_world/
+├── README.md                       # Documentation of expected issues
+├── ncbi_microbiome_submission.tsv  # 16S/metagenome study (10 samples)
+├── ncbi_environmental_submission.tsv # Environmental samples (10 samples)
+└── ncbi_human_clinical.tsv         # Human clinical study (10 samples)
+```
+
+**Test datasets and documented issues:**
+
+| Dataset | Samples | Issues Tested |
+|---------|---------|---------------|
+| Microbiome | 10 | Abbreviated organisms, date formats, case inconsistencies, null values, duplicates |
+| Environmental | 10 | Coordinate formats, missing values, date inconsistencies |
+| Clinical | 10 | Invalid accessions, outliers (impossible ages), organism variations |
+
+**Key validation tests:**
+```
+test_microbiome_detects_organism_inconsistencies
+test_microbiome_detects_date_format_issues
+test_microbiome_detects_case_inconsistencies
+test_environmental_detects_coordinate_issues
+test_environmental_detects_data_quality_issues
+test_clinical_detects_invalid_accessions
+test_clinical_detects_outliers
+test_taxonomy_validator_on_real_names
+test_accession_validator_on_real_accessions
+test_biosample_validator_on_microbiome_data
+```
+
+**Run real-world validation tests:**
+```bash
+cargo test -p crucible --test real_world_validation_test
+
+# View detection summary
+cargo test -p crucible --test real_world_validation_test test_real_world_detection_summary -- --nocapture
+```
+
+**Validation sources:**
+- [NCBI BioSample Validation Errors](https://www.ncbi.nlm.nih.gov/biosample/docs/submission/validation-errors/)
+- [SRA Submission Guidelines](https://www.ncbi.nlm.nih.gov/sra/docs/submit/)
+
 ---
 
 ## Bioinformatics Validation
@@ -318,6 +364,9 @@ cargo test -p crucible --test property_tests
 # Run property tests with more cases (thorough)
 PROPTEST_CASES=10000 cargo test -p crucible --test property_tests
 
+# Run real-world validation tests
+cargo test -p crucible --test real_world_validation_test
+
 # Check test coverage (requires cargo-tarpaulin)
 cargo tarpaulin --out Html
 ```
@@ -436,8 +485,9 @@ test:
 | Integration tests | 32 | 50+ |
 | Golden tests | 7 | 15+ |
 | Property tests | 32 | 50+ |
+| Real-world validation | 14 | 25+ |
 | Doc tests | 9 | 20+ |
-| **Total tests** | **214** | **300+** |
+| **Total tests** | **228** | **350+** |
 | Code coverage | ~75% | 85%+ |
 | Bio module coverage | ~90% | 95%+ |
 
@@ -483,6 +533,7 @@ If you find a validation issue:
 |---------|-------|----------|-------|
 | 0.1.0 | 143 | ~75% | Initial release with bio module |
 | 0.1.1 | 214 | ~78% | Added property-based tests, golden tests |
+| 0.1.2 | 228 | ~80% | Added real-world validation tests |
 
 ---
 

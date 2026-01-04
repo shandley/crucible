@@ -1,0 +1,11 @@
+sample_name	biosample_accession	sra_accession	organism	host	isolation_source	collection_date	geo_loc_name	tissue	disease	age	sex
+CLIN001	SAMN12345678	SRR1234567	Homo sapiens	Homo sapiens	blood	2023-03-01	USA: Massachusetts	blood	Healthy	45	male
+CLIN002	SAMN12345679	SRR123456	H. sapiens	homo sapiens	Blood	03/05/2023	Massachusetts, USA	BLOOD	healthy	52	Male
+CLIN003	SAMN1234567	SRR12345678	Homo sapiens	Homo sapiens	blood	2023-03-10	USA: Massachusetts	blood	Type 2 diabetes	38	female
+CLIN004	SAMN12345680	SRR12345679	human	Human	peripheral blood	2023-03-15	USA: Massachusetts	blood	T2D	41	F
+CLIN005	SAMN12345681	SRR12345680	Homo sapiens	Homo sapiens	blood	2023-03-20	USA: Massachusetts	blood	Diabetes mellitus type 2	55	female
+CLIN006	SAMN12345682	SRR12345681	Homo sapiens	Homo sapiens	blood	N/A	USA: Massachusetts	blood	Healthy	-5	male
+CLIN007	SAMN12345683	ERR12345682	Homo sapiens	Homo sapiens	blood	2023-03-30	USA: Massachusetts	blood	Healthy	200	unknown
+CLIN008	SAMN12345684	SRR12345683	Homo sapiens	Homo sapiens	blood	2023-04-01	USA: Massachusetts	blood	Healthy	33	male
+CLIN009	SAMN12345685	SRR12345684	Homo sapiens	Homo sapiens	blood	2023-04-01	USA: Massachusetts	blood	Healthy	33	male
+CLIN010	SAME12345686	DRR12345685	Homo sapiens	Homo sapiens	tumor tissue	2023-04-05	USA: Massachusetts	breast	Breast cancer	48	female
