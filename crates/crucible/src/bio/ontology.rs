@@ -604,10 +604,10 @@ impl OntologyValidator {
             ("MONDO:0005737", "Ebola hemorrhagic fever", &["Ebola"]),
 
             // Cancer types
-            ("MONDO:0004992", "cancer", &["malignancy", "malignant neoplasm"]),
+            ("MONDO:0005070", "neoplasm", &["cancer", "malignancy", "malignant neoplasm"]),
             ("MONDO:0008903", "lung cancer", &["lung carcinoma"]),
             ("MONDO:0006256", "breast cancer", &["breast carcinoma"]),
-            ("MONDO:0008315", "prostate cancer", &["prostate carcinoma"]),
+            ("MONDO:0005115", "prostate carcinoma", &["prostate cancer"]),
             ("MONDO:0001056", "leukemia", &[]),
             ("MONDO:0024880", "melanoma", &[]),
 
@@ -621,7 +621,7 @@ impl OntologyValidator {
             ("MONDO:0005027", "allergy", &["allergic disease"]),
             ("MONDO:0005364", "atopic dermatitis", &["eczema"]),
             ("MONDO:0021113", "osteoarthritis", &["OA"]),
-            ("MONDO:0005147", "osteoporosis", &[]),
+            ("MONDO:0005298", "osteoporosis", &[]),
             ("MONDO:0002462", "periodontitis", &["periodontal disease", "gum disease"]),
         ];
 

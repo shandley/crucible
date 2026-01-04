@@ -212,6 +212,70 @@ cargo test -p crucible --test real_world_validation_test test_real_world_detecti
 - [NCBI BioSample Validation Errors](https://www.ncbi.nlm.nih.gov/biosample/docs/submission/validation-errors/)
 - [SRA Submission Guidelines](https://www.ncbi.nlm.nih.gov/sra/docs/submit/)
 
+### 7. Ontology Accuracy Tests (18 tests)
+
+Ontology accuracy tests verify that Crucible's built-in ontology terms are correct against authoritative sources. These tests ensure scientific validity by cross-referencing term IDs, labels, and synonyms with official ontology databases.
+
+```
+crates/crucible/tests/ontology_accuracy_test.rs
+├── envo_tests          # 5 tests for ENVO terms
+├── uberon_tests        # 5 tests for UBERON terms
+├── mondo_tests         # 5 tests for MONDO terms
+└── cross_ontology_tests # 3 tests for cross-cutting concerns
+```
+
+**Reference term verification:**
+
+| Ontology | Reference Terms | Coverage |
+|----------|-----------------|----------|
+| ENVO | 20 terms | Environmental biomes, soils, water bodies |
+| UBERON | 23 terms | Anatomical structures, tissues, organs |
+| MONDO | 22 terms | Diseases, disorders, conditions |
+
+**Example reference terms verified:**
+```rust
+// ENVO terms verified against official ontology
+("ENVO:00000446", "terrestrial biome"),
+("ENVO:00001998", "soil"),
+("ENVO:00000015", "ocean"),
+
+// UBERON anatomical terms
+("UBERON:0000178", "blood"),
+("UBERON:0000160", "intestine"),
+("UBERON:0002107", "liver"),
+
+// MONDO disease terms
+("MONDO:0005011", "Crohn disease"),
+("MONDO:0005148", "type 2 diabetes mellitus"),
+("MONDO:0005015", "diabetes mellitus"),
+```
+
+**Tests performed:**
+```
+test_envo_reference_terms_are_accurate
+test_envo_term_count_minimum
+test_envo_synonyms_resolve_correctly
+test_uberon_reference_terms_are_accurate
+test_uberon_term_count_minimum
+test_uberon_anatomical_hierarchy
+test_mondo_reference_terms_are_accurate
+test_mondo_term_count_minimum
+test_mondo_disease_synonyms
+test_no_duplicate_ontology_ids
+test_all_ids_have_valid_format
+test_suggest_mappings_returns_high_confidence
+```
+
+**Run ontology accuracy tests:**
+```bash
+cargo test -p crucible --test ontology_accuracy_test
+```
+
+**Validation sources:**
+- [ENVO](https://github.com/EnvironmentOntology/envo) - Environmental Ontology
+- [UBERON](https://github.com/obophenotype/uberon) - Anatomy Ontology
+- [MONDO](https://github.com/monarch-initiative/mondo) - Disease Ontology
+
 ---
 
 ## Bioinformatics Validation
@@ -367,6 +431,9 @@ PROPTEST_CASES=10000 cargo test -p crucible --test property_tests
 # Run real-world validation tests
 cargo test -p crucible --test real_world_validation_test
 
+# Run ontology accuracy tests
+cargo test -p crucible --test ontology_accuracy_test
+
 # Check test coverage (requires cargo-tarpaulin)
 cargo tarpaulin --out Html
 ```
@@ -486,8 +553,9 @@ test:
 | Golden tests | 7 | 15+ |
 | Property tests | 32 | 50+ |
 | Real-world validation | 14 | 25+ |
+| Ontology accuracy | 18 | 30+ |
 | Doc tests | 9 | 20+ |
-| **Total tests** | **228** | **350+** |
+| **Total tests** | **246** | **400+** |
 | Code coverage | ~75% | 85%+ |
 | Bio module coverage | ~90% | 95%+ |
 
@@ -534,6 +602,7 @@ If you find a validation issue:
 | 0.1.0 | 143 | ~75% | Initial release with bio module |
 | 0.1.1 | 214 | ~78% | Added property-based tests, golden tests |
 | 0.1.2 | 228 | ~80% | Added real-world validation tests |
+| 0.1.3 | 246 | ~82% | Added ontology accuracy tests, fixed duplicate MONDO IDs |
 
 ---
 
