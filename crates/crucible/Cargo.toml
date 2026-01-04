@@ -21,3 +21,4 @@ reqwest.workspace = true
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"
+proptest = "1.4"

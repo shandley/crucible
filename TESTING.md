@@ -102,6 +102,70 @@ Every bug fix includes a test to prevent recurrence:
 | PDB vs Gene ID | `regression_pdb_vs_gene_id` | Pure numeric gene IDs should not match PDB pattern |
 | Short SRA | `regression_short_sra_accessions` | SRR123 should be flagged as invalid (too short) |
 
+### 5. Property-Based Tests (32 tests)
+
+Property-based testing uses [proptest](https://github.com/proptest-rs/proptest) to generate random inputs and verify that validators maintain their invariants under all conditions. This is particularly important for scientific software where edge cases can lead to incorrect results.
+
+```
+crates/crucible/tests/property_tests.rs
+├── taxonomy_tests       # 8 tests for taxonomy validation
+├── accession_tests      # 9 tests for accession validation
+├── ontology_tests       # 6 tests for ontology validation
+├── date_tests           # 3 tests for date parsing
+├── cross_validator_tests# 2 tests for validator independence
+└── regression_property_tests # 4 tests for known edge cases
+```
+
+**Core properties verified:**
+
+| Property | Description |
+|----------|-------------|
+| **No panics** | Validators never crash on any UTF-8 input |
+| **Determinism** | Same input always produces identical output |
+| **Pattern exclusivity** | Accession patterns don't overlap |
+| **Known valid inputs** | Standard organisms/accessions always validate |
+| **Edge case handling** | Empty strings, special characters handled gracefully |
+
+**Example property test:**
+```rust
+proptest! {
+    /// Taxonomy validator never panics on any UTF-8 input.
+    #[test]
+    fn never_panics_on_random_utf8(input in random_bytes()) {
+        let validator = TaxonomyValidator::new();
+        let _ = validator.validate(&input);
+    }
+
+    /// Known valid taxa always return Valid result.
+    #[test]
+    fn known_valid_taxa_are_valid(
+        taxon in prop_oneof![
+            Just("Escherichia coli"),
+            Just("Homo sapiens"),
+            Just("Mus musculus"),
+        ]
+    ) {
+        let validator = TaxonomyValidator::new();
+        let result = validator.validate(taxon);
+        prop_assert!(matches!(result, TaxonomyValidationResult::Valid { .. }));
+    }
+}
+```
+
+**Run property tests:**
+```bash
+# Standard run (256 cases per test)
+cargo test -p crucible --test property_tests
+
+# Thorough run (10,000 cases per test)
+PROPTEST_CASES=10000 cargo test -p crucible --test property_tests
+```
+
+**Regression properties:**
+- Gene IDs (pure numbers) never match PDB pattern
+- Short SRA accessions (< 6 digits) never match SraRun type
+- Taxonomy abbreviations with various punctuation don't panic
+
 ---
 
 ## Bioinformatics Validation
@@ -248,6 +312,12 @@ cargo test -p crucible bio::
 # Run golden tests only
 cargo test -p crucible --test golden_tests
 
+# Run property tests only
+cargo test -p crucible --test property_tests
+
+# Run property tests with more cases (thorough)
+PROPTEST_CASES=10000 cargo test -p crucible --test property_tests
+
 # Check test coverage (requires cargo-tarpaulin)
 cargo tarpaulin --out Html
 ```
@@ -365,6 +435,9 @@ test:
 | Unit tests | 104 | 150+ |
 | Integration tests | 32 | 50+ |
 | Golden tests | 7 | 15+ |
+| Property tests | 32 | 50+ |
+| Doc tests | 9 | 20+ |
+| **Total tests** | **214** | **300+** |
 | Code coverage | ~75% | 85%+ |
 | Bio module coverage | ~90% | 95%+ |
 
@@ -409,7 +482,8 @@ If you find a validation issue:
 | Version | Tests | Coverage | Notes |
 |---------|-------|----------|-------|
 | 0.1.0 | 143 | ~75% | Initial release with bio module |
+| 0.1.1 | 214 | ~78% | Added property-based tests, golden tests |
 
 ---
 
-*Last updated: 2025-01-04*
+*Last updated: 2026-01-04*

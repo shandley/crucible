@@ -41,5 +41,5 @@ pub use ontology::{
     MatchType, OntologyMapping, OntologyStats, OntologyTerm, OntologyType, OntologyValidationResult,
     OntologyValidator,
 };
-pub use taxonomy::{TaxonomyEntry, TaxonomyStats, TaxonomyValidator};
+pub use taxonomy::{TaxonomyEntry, TaxonomyStats, TaxonomyValidationResult, TaxonomyValidator};
 pub use validators::{BioValidator, MixsComplianceValidator};
