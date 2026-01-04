@@ -27,5 +27,5 @@ mod validators;
 pub use mixs::{
     MixsField, MixsFieldRequirement, MixsPackage, MixsSchema, MIXS_CORE_FIELDS,
 };
-pub use taxonomy::{TaxonomyEntry, TaxonomyValidator};
+pub use taxonomy::{TaxonomyEntry, TaxonomyStats, TaxonomyValidator};
 pub use validators::{BioValidator, MixsComplianceValidator};

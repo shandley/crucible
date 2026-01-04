@@ -352,11 +352,7 @@ impl BioValidator for MixsComplianceValidator {
 
             // Check for organism/taxonomy columns
             let col_lower = col.name.to_lowercase();
-            if col_lower == "organism"
-                || col_lower == "host"
-                || col_lower == "species"
-                || col_lower == "taxon"
-            {
+            if is_taxonomy_column(&col_lower) {
                 // Validate taxonomy values
                 let mut abbreviations = Vec::new();
                 let mut case_errors = Vec::new();
@@ -505,6 +501,64 @@ impl BioValidator for MixsComplianceValidator {
     }
 }
 
+/// Check if a column name indicates taxonomy content.
+///
+/// This function recognizes common patterns for taxonomy/organism columns
+/// in microbiome and genomics metadata.
+fn is_taxonomy_column(col_name: &str) -> bool {
+    let name = col_name.to_lowercase();
+
+    // Exact matches
+    let exact_matches = [
+        "organism",
+        "host",
+        "species",
+        "taxon",
+        "taxonomy",
+        "taxa",
+        "genus",
+        "phylum",
+        "class",
+        "order",
+        "family",
+        "kingdom",
+        "domain",
+        "scientific_name",
+        "scientificname",
+        "organism_name",
+        "organismname",
+        "host_organism",
+        "host_species",
+        "host_taxid",
+        "tax_id",
+        "taxid",
+        "ncbi_taxid",
+        "ncbi_taxonomy_id",
+    ];
+
+    if exact_matches.contains(&name.as_str()) {
+        return true;
+    }
+
+    // Partial matches (contains)
+    let partial_matches = ["organism", "species", "taxon"];
+    for pattern in partial_matches {
+        if name.contains(pattern) {
+            return true;
+        }
+    }
+
+    // Suffix matches (ends with _species, _organism, etc.)
+    let suffix_matches = ["_species", "_organism", "_taxon", "_taxonomy", "_host"];
+    for suffix in suffix_matches {
+        if name.ends_with(suffix) {
+            return true;
+        }
+    }
+
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -618,5 +672,27 @@ mod tests {
         // Should have some compliance (has collection_date, lat_lon) but not full
         assert!(score > 0.0);
         assert!(score < 1.0);
+    }
+
+    #[test]
+    fn test_is_taxonomy_column() {
+        // Exact matches
+        assert!(is_taxonomy_column("organism"));
+        assert!(is_taxonomy_column("Organism"));
+        assert!(is_taxonomy_column("host"));
+        assert!(is_taxonomy_column("species"));
+        assert!(is_taxonomy_column("taxid"));
+        assert!(is_taxonomy_column("scientific_name"));
+
+        // Partial matches
+        assert!(is_taxonomy_column("sample_organism"));
+        assert!(is_taxonomy_column("host_species"));
+        assert!(is_taxonomy_column("taxon_id"));
+
+        // Should NOT match
+        assert!(!is_taxonomy_column("sample_id"));
+        assert!(!is_taxonomy_column("diagnosis"));
+        assert!(!is_taxonomy_column("treatment"));
+        assert!(!is_taxonomy_column("age"));
     }
 }
