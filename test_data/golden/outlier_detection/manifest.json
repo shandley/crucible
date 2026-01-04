@@ -1,0 +1,24 @@
+{
+  "name": "outlier_detection",
+  "description": "Tests detection of statistical outliers and impossible values",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 8,
+    "types": ["Outlier"],
+    "columns_with_issues": ["age", "bmi", "read_count", "dna_concentration", "a260_a280"]
+  },
+  "expected_suggestions": {
+    "min_count": 6,
+    "actions": ["Flag"]
+  },
+  "notes": [
+    "age: -5 is impossible (negative age), 150 is implausible",
+    "bmi: -5.2 is impossible (negative BMI), 850.0 is impossible",
+    "read_count: -5000 is impossible, 999999999 is statistical outlier",
+    "dna_concentration: 0.5 is very low, 1250.0 is unusually high",
+    "a260_a280: 3.50 is too high (should be ~1.8-2.0), 0.25 is too low",
+    "not_measured in dna_concentration should be flagged as missing value pattern"
+  ]
+}

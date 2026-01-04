@@ -1,0 +1,617 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T22:05:34.925830Z",
+  "updated_at": "2026-01-04T22:05:34.925830Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "test_data/golden/accession_formats/input.tsv",
+    "hash": "sha256:eafb32cf288fcb745866bfca597138fb25900c54d7f40af29b6200ad84a2a488",
+    "size_bytes": 503,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 8,
+    "column_count": 6,
+    "analyzed_at": "2026-01-04T22:05:34.736848Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "genomics"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005",
+          "S006",
+          "S007",
+          "S008"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005",
+              "S006",
+              "S007",
+              "S008"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1,
+            "S006": 1,
+            "S007": 1,
+            "S008": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "biosample",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SAMN12345678",
+          "SAMN87654321",
+          "invalid_acc",
+          "SAMN11111111",
+          "SAME12345678",
+          "samn99999999",
+          "SAMN00000001",
+          "SAMD12345678"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SAMN12345678",
+              "SAMN87654321",
+              "invalid_acc",
+              "SAMN11111111",
+              "SAME12345678",
+              "samn99999999",
+              "SAMN00000001",
+              "SAMD12345678"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "SAMN12345678",
+            "SAMN87654321",
+            "invalid_acc",
+            "SAMN11111111",
+            "SAME12345678"
+          ],
+          "value_counts": {
+            "SAMN12345678": 1,
+            "SAMN87654321": 1,
+            "invalid_acc": 1,
+            "SAMN11111111": 1,
+            "SAME12345678": 1,
+            "samn99999999": 1,
+            "SAMN00000001": 1,
+            "SAMD12345678": 1
+          },
+          "string": {
+            "min_length": 11,
+            "max_length": 12,
+            "avg_length": 11.875
+          }
+        },
+        "confidence": 0.72,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "sra_run",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SRR1234567",
+          "SRR7654321",
+          "SRR123",
+          "ERR1234567",
+          "DRR9876543",
+          "srr9999999",
+          "SRX1234567",
+          "SRS1234567"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SRR1234567",
+              "SRR7654321",
+              "SRR123",
+              "ERR1234567",
+              "DRR9876543",
+              "srr9999999",
+              "SRX1234567",
+              "SRS1234567"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "SRR1234567",
+            "SRR7654321",
+            "SRR123",
+            "ERR1234567",
+            "DRR9876543"
+          ],
+          "value_counts": {
+            "SRR1234567": 1,
+            "SRR7654321": 1,
+            "SRR123": 1,
+            "ERR1234567": 1,
+            "DRR9876543": 1,
+            "srr9999999": 1,
+            "SRX1234567": 1,
+            "SRS1234567": 1
+          },
+          "string": {
+            "min_length": 6,
+            "max_length": 10,
+            "avg_length": 9.5
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "bioproject",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "PRJNA123456",
+          "PRJNA654321",
+          "PRJNA999",
+          "PRJEB12345",
+          "PRJDB54321",
+          "prjna999999",
+          "PRJNA000001",
+          "PRJDA12345"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "PRJNA123456",
+              "PRJNA654321",
+              "PRJNA999",
+              "PRJEB12345",
+              "PRJDB54321",
+              "prjna999999",
+              "PRJNA000001",
+              "PRJDA12345"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "PRJNA123456",
+            "PRJNA654321",
+            "PRJNA999",
+            "PRJEB12345",
+            "PRJDB54321"
+          ],
+          "value_counts": {
+            "PRJNA123456": 1,
+            "PRJNA654321": 1,
+            "PRJNA999": 1,
+            "PRJEB12345": 1,
+            "PRJDB54321": 1,
+            "prjna999999": 1,
+            "PRJNA000001": 1,
+            "PRJDA12345": 1
+          },
+          "string": {
+            "min_length": 8,
+            "max_length": 11,
+            "avg_length": 10.25
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "genbank_acc",
+        "position": 4,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "NM_001234567",
+          "NC_000001.11",
+          "ABC",
+          "XM_012345678",
+          "NR_123456",
+          "nm_999999",
+          "WP_012345678",
+          "YP_009876543"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "NM_001234567",
+              "NC_000001.11",
+              "ABC",
+              "XM_012345678",
+              "NR_123456",
+              "nm_999999",
+              "WP_012345678",
+              "YP_009876543"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "NM_001234567",
+            "NC_000001.11",
+            "ABC",
+            "XM_012345678",
+            "NR_123456"
+          ],
+          "value_counts": {
+            "NM_001234567": 1,
+            "NC_000001.11": 1,
+            "ABC": 1,
+            "XM_012345678": 1,
+            "NR_123456": 1,
+            "nm_999999": 1,
+            "WP_012345678": 1,
+            "YP_009876543": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 12,
+            "avg_length": 10.125
+          }
+        },
+        "confidence": 0.72,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "gene_id",
+        "position": 5,
+        "inferred_type": "integer",
+        "semantic_type": "count",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_range": [
+          1.0,
+          7422.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": 1.0,
+            "max": 7422.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "7157",
+            "672",
+            "not_a_gene",
+            "1017",
+            "7422"
+          ],
+          "value_counts": {
+            "7157": 1,
+            "672": 1,
+            "not_a_gene": 1,
+            "1017": 1,
+            "7422": 1,
+            "999": 1,
+            "1": 1,
+            "2": 1
+          },
+          "numeric": {
+            "min": 1.0,
+            "max": 7422.0,
+            "mean": 2467.1428571428573,
+            "std": 3074.899646612015,
+            "median": 999.0,
+            "q1": 2.0,
+            "q3": 7157.0
+          }
+        },
+        "confidence": 0.525,
+        "inference_sources": [
+          "statistical"
+        ]
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "type_mismatch",
+      "severity": "error",
+      "column": "gene_id",
+      "description": "1 values (12.5%) don't match expected type Integer",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "sample_rows": [
+          2
+        ],
+        "expected": "Integer"
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:34.925019Z",
+      "detector": "type_validator"
+    },
+    {
+      "id": "obs_002",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "biosample",
+      "description": "Identifier format inconsistency: 2 value(s) (25.0%) don't match dominant pattern (e.g., 'SAMN12345678'): [\"invalid_acc\", \"samn99999999\"]",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          2,
+          5
+        ],
+        "value_counts": {
+          "AAAA########": {
+            "count": 6,
+            "examples": [
+              "SAMN12345678",
+              "SAMN87654321"
+            ]
+          },
+          "aaaa########": {
+            "count": 1,
+            "examples": [
+              "samn99999999"
+            ]
+          },
+          "aaaaaaa_aaa": {
+            "count": 1,
+            "examples": [
+              "invalid_acc"
+            ]
+          }
+        }
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-04T22:05:34.925601Z",
+      "detector": "regex_pattern_validator"
+    },
+    {
+      "id": "obs_003",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "sra_run",
+      "description": "Identifier format inconsistency: 2 value(s) (25.0%) don't match dominant pattern (e.g., 'SRR1234567'): [\"SRR123\", \"srr9999999\"]",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          2,
+          5
+        ],
+        "value_counts": {
+          "AAA###": {
+            "count": 1,
+            "examples": [
+              "SRR123"
+            ]
+          },
+          "AAA#######": {
+            "count": 6,
+            "examples": [
+              "SRR1234567",
+              "SRR7654321"
+            ]
+          },
+          "aaa#######": {
+            "count": 1,
+            "examples": [
+              "srr9999999"
+            ]
+          }
+        }
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-04T22:05:34.925701Z",
+      "detector": "regex_pattern_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "flag",
+      "priority": 2,
+      "parameters": {
+        "column": "gene_id",
+        "flag_column": "gene_id_type_error",
+        "flag_value": "type_mismatch",
+        "rows": [
+          2
+        ]
+      },
+      "rationale": "Flag 1 value(s) (12.5%) with type mismatches in column 'gene_id'. Review before type coercion due to high error rate.",
+      "affected_rows": 1,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:34.925766Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 6,
+    "columns_with_issues": 3,
+    "total_observations": 3,
+    "observations_by_severity": {
+      "error": 1,
+      "warning": 2,
+      "info": 0
+    },
+    "observations_by_type": {
+      "typemismatch": 1,
+      "inconsistency": 2
+    },
+    "data_quality_score": 0.36,
+    "recommendation": "Address 1 error-level issues before proceeding with analysis.",
+    "total_suggestions": 1,
+    "suggestions_by_status": {
+      "pending": 1,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 1
+  }
+}

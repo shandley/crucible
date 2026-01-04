@@ -1,0 +1,418 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T22:05:34.317581Z",
+  "updated_at": "2026-01-04T22:05:34.317581Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "test_data/golden/taxonomy_validation/input.tsv",
+    "hash": "sha256:a098722d8b2a9b6ea92b11f6aff6003bbd87e12aba640e89e9f821eccc4192b2",
+    "size_bytes": 516,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 12,
+    "column_count": 4,
+    "analyzed_at": "2026-01-04T22:05:34.107479Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "microbiome"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005",
+          "S006",
+          "S007",
+          "S008",
+          "S009",
+          "S010",
+          "S011",
+          "S012"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005",
+              "S006",
+              "S007",
+              "S008",
+              "S009",
+              "S010",
+              "S011",
+              "S012"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 12,
+          "null_count": 0,
+          "unique_count": 12,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1,
+            "S006": 1,
+            "S007": 1,
+            "S008": 1,
+            "S009": 1,
+            "S010": 1,
+            "S011": 1,
+            "S012": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "organism",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "Escherichia coli",
+          "E. coli",
+          "Bacteroides fragilis",
+          "B. fragilis",
+          "Staphylococcus aureus",
+          "S. aureus",
+          "Lactobacillus acidophilus",
+          "L. acidophilus",
+          "Clostridioides difficile",
+          "C. diff",
+          "Pseudomonas aeruginosa",
+          "Pseudomonas aeroginosa"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Escherichia coli",
+              "E. coli",
+              "Bacteroides fragilis",
+              "B. fragilis",
+              "Staphylococcus aureus",
+              "S. aureus",
+              "Lactobacillus acidophilus",
+              "L. acidophilus",
+              "Clostridioides difficile",
+              "C. diff",
+              "Pseudomonas aeruginosa",
+              "Pseudomonas aeroginosa"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 12,
+          "null_count": 0,
+          "unique_count": 12,
+          "sample_values": [
+            "Escherichia coli",
+            "E. coli",
+            "Bacteroides fragilis",
+            "B. fragilis",
+            "Staphylococcus aureus"
+          ],
+          "value_counts": {
+            "Escherichia coli": 1,
+            "E. coli": 1,
+            "Bacteroides fragilis": 1,
+            "B. fragilis": 1,
+            "Staphylococcus aureus": 1,
+            "S. aureus": 1,
+            "Lactobacillus acidophilus": 1,
+            "L. acidophilus": 1,
+            "Clostridioides difficile": 1,
+            "C. diff": 1,
+            "Pseudomonas aeruginosa": 1,
+            "Pseudomonas aeroginosa": 1
+          },
+          "string": {
+            "min_length": 7,
+            "max_length": 25,
+            "avg_length": 16.5
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "host",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "Homo sapiens",
+          "human",
+          "H. sapiens",
+          "Mus musculus",
+          "mouse"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Homo sapiens",
+              "human",
+              "H. sapiens",
+              "Mus musculus",
+              "mouse"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 12,
+          "null_count": 0,
+          "unique_count": 5,
+          "sample_values": [
+            "Homo sapiens",
+            "human",
+            "H. sapiens",
+            "Mus musculus",
+            "mouse"
+          ],
+          "value_counts": {
+            "Homo sapiens": 5,
+            "human": 4,
+            "H. sapiens": 1,
+            "Mus musculus": 1,
+            "mouse": 1
+          },
+          "string": {
+            "min_length": 5,
+            "max_length": 12,
+            "avg_length": 8.916666666666666
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "isolation_source",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "metadata",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "gut",
+          "intestine",
+          "stool",
+          "feces",
+          "skin",
+          "wound",
+          "oral cavity",
+          "mouth",
+          "lung",
+          "respiratory"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "gut",
+              "intestine",
+              "stool",
+              "feces",
+              "skin",
+              "wound",
+              "oral cavity",
+              "mouth",
+              "lung",
+              "respiratory"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 12,
+          "null_count": 0,
+          "unique_count": 10,
+          "sample_values": [
+            "gut",
+            "intestine",
+            "stool",
+            "feces",
+            "skin"
+          ],
+          "value_counts": {
+            "gut": 2,
+            "intestine": 2,
+            "stool": 1,
+            "feces": 1,
+            "skin": 1,
+            "wound": 1,
+            "oral cavity": 1,
+            "mouth": 1,
+            "lung": 1,
+            "respiratory": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 11,
+            "avg_length": 6.166666666666667
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "isolation_source",
+      "description": "2 semantic equivalent group(s) detected: [\"gut\", \"intestine\"] (same as 'gut'); [\"stool\", \"feces\"] (same as 'stool')",
+      "evidence": {
+        "occurrences": 6,
+        "percentage": 50.0,
+        "value_counts": {
+          "gut": {
+            "gut": 2,
+            "intestine": 2
+          },
+          "stool": {
+            "feces": 1,
+            "stool": 1
+          }
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:34.317343Z",
+      "detector": "semantic_equivalence_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "isolation_source",
+        "mapping": {
+          "intestine": "gut",
+          "stool": "feces"
+        }
+      },
+      "rationale": "Standardize 2 variant(s) [\"intestine\", \"stool\"] to 'gut' in column 'isolation_source'.",
+      "affected_rows": 6,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:34.317526Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 4,
+    "columns_with_issues": 1,
+    "total_observations": 1,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 1,
+      "info": 0
+    },
+    "observations_by_type": {
+      "inconsistency": 1
+    },
+    "data_quality_score": 0.73,
+    "recommendation": "Data quality is acceptable. Consider addressing warnings.",
+    "total_suggestions": 1,
+    "suggestions_by_status": {
+      "pending": 1,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 6
+  }
+}

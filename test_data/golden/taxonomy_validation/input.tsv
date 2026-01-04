@@ -1,0 +1,13 @@
+sample_id	organism	host	isolation_source
+S001	Escherichia coli	Homo sapiens	gut
+S002	E. coli	human	intestine
+S003	Bacteroides fragilis	Homo sapiens	stool
+S004	B. fragilis	H. sapiens	feces
+S005	Staphylococcus aureus	Mus musculus	skin
+S006	S. aureus	mouse	wound
+S007	Lactobacillus acidophilus	Homo sapiens	oral cavity
+S008	L. acidophilus	human	mouth
+S009	Clostridioides difficile	Homo sapiens	gut
+S010	C. diff	human	intestine
+S011	Pseudomonas aeruginosa	Homo sapiens	lung
+S012	Pseudomonas aeroginosa	human	respiratory

@@ -1,0 +1,1175 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T22:05:43.863037Z",
+  "updated_at": "2026-01-04T22:05:43.863037Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "test_data/golden/mixs_compliance/input.tsv",
+    "hash": "sha256:6ff69dbf067b4e3ef06972be2e1c5da089fc6007d2a81546f5ca996bdbe9237c",
+    "size_bytes": 859,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 5,
+    "column_count": 12,
+    "analyzed_at": "2026-01-04T22:05:43.590184Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "microbiome"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 5,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "sample_name",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "IBD_Patient_001",
+          "IBD_Patient_002",
+          "IBD_Patient_003",
+          "IBD_Patient_004",
+          "IBD_Patient_005"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "IBD_Patient_001",
+              "IBD_Patient_002",
+              "IBD_Patient_003",
+              "IBD_Patient_004",
+              "IBD_Patient_005"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]{3}_[A-Z][a-z]{6}_\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 5,
+          "sample_values": [
+            "IBD_Patient_001",
+            "IBD_Patient_002",
+            "IBD_Patient_003",
+            "IBD_Patient_004",
+            "IBD_Patient_005"
+          ],
+          "value_counts": {
+            "IBD_Patient_001": 1,
+            "IBD_Patient_002": 1,
+            "IBD_Patient_003": 1,
+            "IBD_Patient_004": 1,
+            "IBD_Patient_005": 1
+          },
+          "string": {
+            "min_length": 15,
+            "max_length": 15,
+            "avg_length": 15.0
+          }
+        },
+        "confidence": 0.8,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "organism",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "human gut metagenome",
+          "gut metagenome",
+          "Homo sapiens"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "human gut metagenome",
+              "gut metagenome",
+              "Homo sapiens"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "human gut metagenome",
+            "gut metagenome",
+            "Homo sapiens"
+          ],
+          "value_counts": {
+            "human gut metagenome": 3,
+            "gut metagenome": 1,
+            "Homo sapiens": 1
+          },
+          "string": {
+            "min_length": 12,
+            "max_length": 20,
+            "avg_length": 17.2
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "host",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "binary",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "Homo sapiens",
+          "human"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Homo sapiens",
+              "human"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 2,
+          "sample_values": [
+            "Homo sapiens",
+            "human"
+          ],
+          "value_counts": {
+            "Homo sapiens": 4,
+            "human": 1
+          },
+          "string": {
+            "min_length": 5,
+            "max_length": 12,
+            "avg_length": 10.6
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "body_site",
+        "position": 4,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "gut",
+          "intestine",
+          "stool"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "gut",
+              "intestine",
+              "stool"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "gut",
+            "intestine",
+            "stool"
+          ],
+          "value_counts": {
+            "gut": 3,
+            "intestine": 1,
+            "stool": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 9,
+            "avg_length": 4.6
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "collection_date",
+        "position": 5,
+        "inferred_type": "date",
+        "semantic_type": "continuous",
+        "semantic_role": "metadata",
+        "nullable": false,
+        "unique": false,
+        "constraints": [
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "2024-01-15",
+            "Jan 15, 2024",
+            "not applicable"
+          ],
+          "value_counts": {
+            "2024-01-15": 3,
+            "Jan 15, 2024": 1,
+            "not applicable": 1
+          }
+        },
+        "confidence": 0.53,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "lat_lon",
+        "position": 6,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "38.8977,-77.0365",
+          "38.9,-77.0",
+          "missing"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "38.8977,-77.0365",
+              "38.9,-77.0",
+              "missing"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "38.8977,-77.0365",
+            "38.9,-77.0",
+            "missing"
+          ],
+          "value_counts": {
+            "38.8977,-77.0365": 3,
+            "38.9,-77.0": 1,
+            "missing": 1
+          },
+          "string": {
+            "min_length": 7,
+            "max_length": 16,
+            "avg_length": 13.0
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "geo_loc_name",
+        "position": 7,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "USA: Washington DC",
+          "USA",
+          "not collected"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "USA: Washington DC",
+              "USA",
+              "not collected"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "USA: Washington DC",
+            "USA",
+            "not collected"
+          ],
+          "value_counts": {
+            "USA: Washington DC": 3,
+            "USA": 1,
+            "not collected": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 18,
+            "avg_length": 14.0
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "env_broad_scale",
+        "position": 8,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "ENVO:01000254",
+          "human gut",
+          "forest",
+          "gut environment"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "ENVO:01000254",
+              "human gut",
+              "forest",
+              "gut environment"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "ENVO:01000254",
+            "human gut",
+            "forest",
+            "gut environment"
+          ],
+          "value_counts": {
+            "ENVO:01000254": 2,
+            "human gut": 1,
+            "forest": 1,
+            "gut environment": 1
+          },
+          "string": {
+            "min_length": 6,
+            "max_length": 15,
+            "avg_length": 11.2
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "env_local_scale",
+        "position": 9,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "ENVO:00002030",
+          "digestive tract",
+          "tree",
+          "intestinal lumen"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "ENVO:00002030",
+              "digestive tract",
+              "tree",
+              "intestinal lumen"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "ENVO:00002030",
+            "digestive tract",
+            "tree",
+            "intestinal lumen"
+          ],
+          "value_counts": {
+            "ENVO:00002030": 2,
+            "digestive tract": 1,
+            "tree": 1,
+            "intestinal lumen": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 16,
+            "avg_length": 12.2
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "env_medium",
+        "position": 10,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "ENVO:00002003",
+          "feces",
+          "soil",
+          "fecal material"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "ENVO:00002003",
+              "feces",
+              "soil",
+              "fecal material"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "ENVO:00002003",
+            "feces",
+            "soil",
+            "fecal material"
+          ],
+          "value_counts": {
+            "ENVO:00002003": 2,
+            "feces": 1,
+            "soil": 1,
+            "fecal material": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 14,
+            "avg_length": 9.8
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      },
+      {
+        "name": "samp_collect_device",
+        "position": 11,
+        "inferred_type": "string",
+        "semantic_type": "binary",
+        "semantic_role": "unknown",
+        "nullable": true,
+        "unique": false,
+        "expected_values": [
+          "sterile swab",
+          "swab"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "sterile swab",
+              "swab"
+            ],
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 5,
+          "null_count": 1,
+          "unique_count": 2,
+          "sample_values": [
+            "sterile swab",
+            "swab"
+          ],
+          "value_counts": {
+            "sterile swab": 3,
+            "swab": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 12,
+            "avg_length": 10.0
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ]
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "completeness",
+      "severity": "error",
+      "column": "samp_collect_device",
+      "description": "20.0% of values are missing",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 20.0
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:43.843486Z",
+      "detector": "completeness_validator"
+    },
+    {
+      "id": "obs_002",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "body_site",
+      "description": "1 semantic equivalent group(s) detected: [\"gut\", \"intestine\"] (same as 'gut')",
+      "evidence": {
+        "occurrences": 4,
+        "percentage": 80.0,
+        "value_counts": {
+          "gut": {
+            "gut": 3,
+            "intestine": 1
+          }
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:43.844055Z",
+      "detector": "semantic_equivalence_validator"
+    },
+    {
+      "id": "obs_003",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "collection_date",
+      "description": "Mixed date formats detected (ISO (YYYY-MM-DD): 2024-01-15 (3 values); Month name (Mon DD YYYY): Jan 15, 2024 (1 values)). Recommend standardizing to ISO (YYYY-MM-DD)",
+      "evidence": {
+        "occurrences": 4,
+        "percentage": 100.0,
+        "sample_rows": [
+          2
+        ],
+        "value_counts": {
+          "ISO (YYYY-MM-DD)": {
+            "count": 3,
+            "examples": [
+              "2024-01-15",
+              "2024-01-15",
+              "2024-01-15"
+            ]
+          },
+          "Month name (Mon DD YYYY)": {
+            "count": 1,
+            "examples": [
+              "Jan 15, 2024"
+            ]
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.844302Z",
+      "detector": "date_format_validator"
+    },
+    {
+      "id": "obs_004",
+      "type": "completeness",
+      "severity": "error",
+      "column": "investigation_type",
+      "description": "Missing mandatory MIxS field 'investigation_type' (Investigation Type) for human-gut package",
+      "evidence": {
+        "expected": {
+          "description": "Type of investigation (e.g., metagenome, genome, transcriptome)",
+          "example": "metagenome",
+          "field": "investigation_type",
+          "format": null,
+          "package": "human-gut",
+          "requirement": "mandatory"
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:43.861470Z",
+      "detector": "MixsComplianceValidator"
+    },
+    {
+      "id": "obs_005",
+      "type": "completeness",
+      "severity": "error",
+      "column": "project_name",
+      "description": "Missing mandatory MIxS field 'project_name' (Project Name) for human-gut package",
+      "evidence": {
+        "expected": {
+          "description": "Name of the project",
+          "example": null,
+          "field": "project_name",
+          "format": null,
+          "package": "human-gut",
+          "requirement": "mandatory"
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:43.861512Z",
+      "detector": "MixsComplianceValidator"
+    },
+    {
+      "id": "obs_006",
+      "type": "completeness",
+      "severity": "error",
+      "column": "host_subject_id",
+      "description": "Missing mandatory MIxS field 'host_subject_id' (Host Subject ID) for human-gut package",
+      "evidence": {
+        "expected": {
+          "description": "Unique identifier for the human subject",
+          "example": null,
+          "field": "host_subject_id",
+          "format": null,
+          "package": "human-gut",
+          "requirement": "mandatory"
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:43.861717Z",
+      "detector": "MixsComplianceValidator"
+    },
+    {
+      "id": "obs_007",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "organism",
+      "description": "Incorrect capitalization in taxonomy names (1 occurrences).",
+      "evidence": {
+        "value": {
+          "correct": "human gut metagenome",
+          "example": "gut metagenome",
+          "taxid": 408170
+        },
+        "occurrences": 1,
+        "sample_rows": [
+          1
+        ]
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.861892Z",
+      "detector": "TaxonomyValidator"
+    },
+    {
+      "id": "obs_008",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "host",
+      "description": "Incorrect capitalization in taxonomy names (1 occurrences).",
+      "evidence": {
+        "value": {
+          "correct": "Homo sapiens",
+          "example": "human",
+          "taxid": 9606
+        },
+        "occurrences": 1,
+        "sample_rows": [
+          1
+        ]
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.861945Z",
+      "detector": "TaxonomyValidator"
+    },
+    {
+      "id": "obs_009",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "body_site",
+      "description": "Free-text values could be mapped to UBERON (Anatomy Ontology). Consider using ontology IDs for FAIR compliance.",
+      "evidence": {
+        "value": {
+          "example_term": "gut",
+          "suggested_mappings": [
+            "UBERON:0000160 (intestine)"
+          ]
+        },
+        "occurrences": 5,
+        "sample_rows": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-04T22:05:43.862012Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_010",
+      "type": "pattern_violation",
+      "severity": "warning",
+      "column": "collection_date",
+      "description": "Non-ISO date format in 1 rows. MIxS requires ISO 8601 dates.",
+      "evidence": {
+        "value": "Jan 15, 2024",
+        "occurrences": 1,
+        "sample_rows": [
+          1
+        ],
+        "expected": "YYYY-MM-DD, YYYY-MM, or YYYY"
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.862039Z",
+      "detector": "MixsComplianceValidator"
+    },
+    {
+      "id": "obs_011",
+      "type": "pattern_violation",
+      "severity": "warning",
+      "column": "lat_lon",
+      "description": "Invalid lat_lon format in 4 rows. Expected 'DD.DDDD DD.DDDD' format.",
+      "evidence": {
+        "value": "38.8977,-77.0365",
+        "occurrences": 4,
+        "sample_rows": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "expected": "38.98 -77.11 or 38.98N 77.11W"
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.862055Z",
+      "detector": "MixsComplianceValidator"
+    },
+    {
+      "id": "obs_012",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "env_broad_scale",
+      "description": "Free-text values could be mapped to ENVO (Environmental Ontology). Consider using ontology IDs for FAIR compliance.",
+      "evidence": {
+        "value": {
+          "example_term": "human gut",
+          "suggested_mappings": [
+            "ENVO:00005789 (human gut)"
+          ]
+        },
+        "occurrences": 2,
+        "sample_rows": [
+          1,
+          2
+        ]
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-04T22:05:43.862130Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_013",
+      "type": "constraint_violation",
+      "severity": "info",
+      "column": "env_broad_scale",
+      "description": "Unrecognized terms for ENVO (Environmental Ontology) (1 values). Consider verifying against the ontology.",
+      "evidence": {
+        "value": [
+          "gut environment"
+        ],
+        "occurrences": 1
+      },
+      "confidence": 0.5,
+      "detected_at": "2026-01-04T22:05:43.862132Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_014",
+      "type": "pattern_violation",
+      "severity": "error",
+      "column": "env_broad_scale",
+      "description": "Invalid ontology IDs found (2 occurrences). IDs should match ENVO (Environmental Ontology) terms.",
+      "evidence": {
+        "value": {
+          "example_id": "ENVO:01000254"
+        },
+        "occurrences": 2,
+        "sample_rows": [
+          0,
+          3
+        ]
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:43.862135Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_015",
+      "type": "constraint_violation",
+      "severity": "info",
+      "column": "env_local_scale",
+      "description": "Unrecognized terms for ENVO (Environmental Ontology) (3 values). Consider verifying against the ontology.",
+      "evidence": {
+        "value": [
+          "digestive tract",
+          "tree",
+          "intestinal lumen"
+        ],
+        "occurrences": 3
+      },
+      "confidence": 0.5,
+      "detected_at": "2026-01-04T22:05:43.862203Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_016",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "env_medium",
+      "description": "Free-text values could be mapped to ENVO (Environmental Ontology). Consider using ontology IDs for FAIR compliance.",
+      "evidence": {
+        "value": {
+          "example_term": "feces",
+          "suggested_mappings": [
+            "ENVO:00002003 (feces)"
+          ]
+        },
+        "occurrences": 2,
+        "sample_rows": [
+          1,
+          2
+        ]
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-04T22:05:43.862245Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_017",
+      "type": "constraint_violation",
+      "severity": "info",
+      "column": "env_medium",
+      "description": "Unrecognized terms for ENVO (Environmental Ontology) (1 values). Consider verifying against the ontology.",
+      "evidence": {
+        "value": [
+          "fecal material"
+        ],
+        "occurrences": 1
+      },
+      "confidence": 0.5,
+      "detected_at": "2026-01-04T22:05:43.862246Z",
+      "detector": "OntologyValidator"
+    },
+    {
+      "id": "obs_018",
+      "type": "constraint_violation",
+      "severity": "error",
+      "column": "organism",
+      "description": "Invalid or unrecognized organism names (1 occurrences). Example: 'gut metagenome'",
+      "evidence": {
+        "occurrences": 1,
+        "sample_rows": [
+          1
+        ],
+        "expected": {
+          "suggestion": "Verify organism names against NCBI Taxonomy. Use the scientific name with proper capitalization."
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:43.862792Z",
+      "detector": "BioSampleValidator"
+    },
+    {
+      "id": "obs_019",
+      "type": "pattern_violation",
+      "severity": "warning",
+      "column": "collection_date",
+      "description": "Non-ISO date format in column 'collection_date' (1 occurrences). Example: 'Jan 15, 2024'",
+      "evidence": {
+        "occurrences": 1,
+        "sample_rows": [
+          1
+        ],
+        "expected": {
+          "suggestion": "Use ISO 8601 format: YYYY-MM-DD, YYYY-MM, or YYYY. Or use 'missing', 'not collected'."
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:43.862794Z",
+      "detector": "BioSampleValidator"
+    },
+    {
+      "id": "obs_020",
+      "type": "pattern_violation",
+      "severity": "warning",
+      "column": "lat_lon",
+      "description": "Invalid coordinate format in column 'lat_lon' (4 occurrences). Example: '38.8977,-77.0365'",
+      "evidence": {
+        "occurrences": 4,
+        "sample_rows": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "expected": {
+          "suggestion": "Use decimal degrees: 'DD.DDDD DD.DDDD' or 'DD.DDDDН DD.DDDDW'. Or use 'missing', 'not collected'."
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:43.862795Z",
+      "detector": "BioSampleValidator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_002",
+      "observation_id": "obs_002",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "body_site",
+        "mapping": {
+          "intestine": "gut"
+        }
+      },
+      "rationale": "Standardize 1 variant(s) [\"intestine\"] to 'gut' in column 'body_site'.",
+      "affected_rows": 4,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:43.844418Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_003",
+      "observation_id": "obs_003",
+      "action": "convert_date",
+      "priority": 2,
+      "parameters": {
+        "column": "collection_date",
+        "target_format": "ISO (YYYY-MM-DD)"
+      },
+      "rationale": "Standardize 4 date value(s) in column 'collection_date' to ISO format (YYYY-MM-DD). This ensures consistent date handling across all rows.",
+      "affected_rows": 4,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:43.844420Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "samp_collect_device",
+        "missing_count": 1,
+        "missing_percentage": 20.0
+      },
+      "rationale": "Column 'samp_collect_device' has 20.0% missing values (1 rows). Consider whether this column should be included in analysis or if missing data can be imputed.",
+      "affected_rows": 1,
+      "confidence": 0.95,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:43.844411Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 12,
+    "columns_with_issues": 3,
+    "total_observations": 3,
+    "observations_by_severity": {
+      "error": 1,
+      "warning": 2,
+      "info": 0
+    },
+    "observations_by_type": {
+      "inconsistency": 2,
+      "completeness": 1
+    },
+    "data_quality_score": 0.61,
+    "recommendation": "Address 1 error-level issues before proceeding with analysis.",
+    "total_suggestions": 3,
+    "suggestions_by_status": {
+      "pending": 3,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 9
+  }
+}

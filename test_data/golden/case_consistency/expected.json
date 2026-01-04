@@ -1,0 +1,718 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T22:05:17.943786Z",
+  "updated_at": "2026-01-04T22:05:17.943786Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "test_data/golden/case_consistency/input.tsv",
+    "hash": "sha256:ca92a8c8c3473b8a3589af061ab4c27dfd92cb8640c664fcc979773af5e6ca0c",
+    "size_bytes": 293,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 8,
+    "column_count": 4,
+    "analyzed_at": "2026-01-04T22:05:17.818691Z"
+  },
+  "context": {
+    "hints": {},
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005",
+          "S006",
+          "S007",
+          "S008"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005",
+              "S006",
+              "S007",
+              "S008"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1,
+            "S006": 1,
+            "S007": 1,
+            "S008": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "diagnosis",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "CD",
+          "cd",
+          "Crohn's Disease",
+          "UC",
+          "uc",
+          "Ulcerative Colitis",
+          "Control",
+          "control"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "CD",
+              "cd",
+              "Crohn's Disease",
+              "UC",
+              "uc",
+              "Ulcerative Colitis",
+              "Control",
+              "control"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "CD",
+            "cd",
+            "Crohn's Disease",
+            "UC",
+            "uc"
+          ],
+          "value_counts": {
+            "CD": 1,
+            "cd": 1,
+            "Crohn's Disease": 1,
+            "UC": 1,
+            "uc": 1,
+            "Ulcerative Colitis": 1,
+            "Control": 1,
+            "control": 1
+          },
+          "string": {
+            "min_length": 2,
+            "max_length": 18,
+            "avg_length": 6.875
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "treatment",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "grouping",
+        "nullable": true,
+        "unique": false,
+        "expected_values": [
+          "Infliximab",
+          "infliximab",
+          "INFLIXIMAB",
+          "Vedolizumab",
+          "vedolizumab"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Infliximab",
+              "infliximab",
+              "INFLIXIMAB",
+              "Vedolizumab",
+              "vedolizumab"
+            ],
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 2,
+          "unique_count": 5,
+          "sample_values": [
+            "Infliximab",
+            "infliximab",
+            "INFLIXIMAB",
+            "Vedolizumab",
+            "vedolizumab"
+          ],
+          "value_counts": {
+            "Infliximab": 1,
+            "infliximab": 1,
+            "INFLIXIMAB": 1,
+            "Vedolizumab": 2,
+            "vedolizumab": 1
+          },
+          "string": {
+            "min_length": 10,
+            "max_length": 11,
+            "avg_length": 10.5
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "response",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "outcome",
+        "nullable": true,
+        "unique": true,
+        "expected_values": [
+          "Responder",
+          "responder",
+          "RESPONDER",
+          "Non-Responder",
+          "non-responder",
+          "Partial"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Responder",
+              "responder",
+              "RESPONDER",
+              "Non-Responder",
+              "non-responder",
+              "Partial"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 2,
+          "unique_count": 6,
+          "sample_values": [
+            "Responder",
+            "responder",
+            "RESPONDER",
+            "Non-Responder",
+            "non-responder"
+          ],
+          "value_counts": {
+            "Responder": 1,
+            "responder": 1,
+            "RESPONDER": 1,
+            "Non-Responder": 1,
+            "non-responder": 1,
+            "Partial": 1
+          },
+          "string": {
+            "min_length": 7,
+            "max_length": 13,
+            "avg_length": 10.0
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "completeness",
+      "severity": "error",
+      "column": "treatment",
+      "description": "25.0% of values are missing",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:17.943067Z",
+      "detector": "completeness_validator"
+    },
+    {
+      "id": "obs_002",
+      "type": "completeness",
+      "severity": "error",
+      "column": "response",
+      "description": "25.0% of values are missing",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T22:05:17.943070Z",
+      "detector": "completeness_validator"
+    },
+    {
+      "id": "obs_003",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "diagnosis",
+      "description": "Case variants detected for 3 value(s): [\"CD\", \"cd\"], [\"UC\", \"uc\"], [\"Control\", \"control\"]",
+      "evidence": {
+        "occurrences": 6,
+        "percentage": 75.0,
+        "value_counts": {
+          "cd": {
+            "CD": 1,
+            "cd": 1
+          },
+          "control": {
+            "Control": 1,
+            "control": 1
+          },
+          "uc": {
+            "UC": 1,
+            "uc": 1
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:17.943129Z",
+      "detector": "case_variant_validator"
+    },
+    {
+      "id": "obs_004",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "treatment",
+      "description": "Case variants detected for 2 value(s): [\"Infliximab\", \"infliximab\", \"INFLIXIMAB\"], [\"Vedolizumab\", \"vedolizumab\"]",
+      "evidence": {
+        "occurrences": 6,
+        "percentage": 75.0,
+        "value_counts": {
+          "infliximab": {
+            "INFLIXIMAB": 1,
+            "Infliximab": 1,
+            "infliximab": 1
+          },
+          "vedolizumab": {
+            "Vedolizumab": 2,
+            "vedolizumab": 1
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:17.943212Z",
+      "detector": "case_variant_validator"
+    },
+    {
+      "id": "obs_005",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "response",
+      "description": "Case variants detected for 2 value(s): [\"Responder\", \"responder\", \"RESPONDER\"], [\"Non-Responder\", \"non-responder\"]",
+      "evidence": {
+        "occurrences": 5,
+        "percentage": 62.5,
+        "value_counts": {
+          "non-responder": {
+            "Non-Responder": 1,
+            "non-responder": 1
+          },
+          "responder": {
+            "RESPONDER": 1,
+            "Responder": 1,
+            "responder": 1
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:17.943228Z",
+      "detector": "case_variant_validator"
+    },
+    {
+      "id": "obs_006",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "treatment",
+      "description": "1 potential typo(s) detected: 'vedolizumab' → 'Vedolizumab'",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "value_counts": {
+          "vedolizumab": {
+            "count": 1,
+            "suggestion": "Vedolizumab"
+          }
+        }
+      },
+      "confidence": 0.75,
+      "detected_at": "2026-01-04T22:05:17.943323Z",
+      "detector": "typo_validator"
+    },
+    {
+      "id": "obs_007",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "diagnosis",
+      "description": "3 semantic equivalent group(s) detected: [\"CD\", \"cd\", \"Crohn's Disease\"] (same as 'CD'); [\"UC\", \"uc\", \"Ulcerative Colitis\"] (same as 'UC'); [\"Control\", \"control\"] (same as 'control')",
+      "evidence": {
+        "occurrences": 8,
+        "percentage": 100.0,
+        "value_counts": {
+          "CD": {
+            "CD": 1,
+            "Crohn's Disease": 1,
+            "cd": 1
+          },
+          "UC": {
+            "UC": 1,
+            "Ulcerative Colitis": 1,
+            "uc": 1
+          },
+          "control": {
+            "Control": 1,
+            "control": 1
+          }
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:17.943488Z",
+      "detector": "semantic_equivalence_validator"
+    },
+    {
+      "id": "obs_008",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "response",
+      "description": "2 semantic equivalent group(s) detected: [\"Responder\", \"responder\", \"RESPONDER\"] (same as 'responder'); [\"Non-Responder\", \"non-responder\"] (same as 'non-responder')",
+      "evidence": {
+        "occurrences": 5,
+        "percentage": 62.5,
+        "value_counts": {
+          "non-responder": {
+            "Non-Responder": 1,
+            "non-responder": 1
+          },
+          "responder": {
+            "RESPONDER": 1,
+            "Responder": 1,
+            "responder": 1
+          }
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:17.943604Z",
+      "detector": "semantic_equivalence_validator"
+    },
+    {
+      "id": "obs_009",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "treatment",
+      "description": "2 value(s) need title case: 'infliximab' → 'Infliximab', 'vedolizumab' → 'Vedolizumab'",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          2,
+          5
+        ],
+        "value_counts": {
+          "infliximab": {
+            "count": 1,
+            "suggestion": "Infliximab"
+          },
+          "vedolizumab": {
+            "count": 1,
+            "suggestion": "Vedolizumab"
+          }
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T22:05:17.943682Z",
+      "detector": "title_case_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_003",
+      "observation_id": "obs_003",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "diagnosis",
+        "mapping": {
+          "cd": "CD",
+          "control": "Control",
+          "uc": "UC"
+        }
+      },
+      "rationale": "Standardize 3 variant(s) [\"cd\", \"control\", \"uc\"] to 'CD' in column 'diagnosis'.",
+      "affected_rows": 6,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943708Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_004",
+      "observation_id": "obs_004",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "treatment",
+        "mapping": {
+          "Infliximab": "INFLIXIMAB",
+          "infliximab": "INFLIXIMAB",
+          "vedolizumab": "Vedolizumab"
+        }
+      },
+      "rationale": "Standardize 3 variant(s) [\"Infliximab\", \"infliximab\", \"vedolizumab\"] to 'INFLIXIMAB' in column 'treatment'.",
+      "affected_rows": 6,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943714Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_005",
+      "observation_id": "obs_005",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "response",
+        "mapping": {
+          "Responder": "RESPONDER",
+          "non-responder": "Non-Responder",
+          "responder": "RESPONDER"
+        }
+      },
+      "rationale": "Standardize 3 variant(s) [\"non-responder\", \"Responder\", \"responder\"] to 'Non-Responder' in column 'response'.",
+      "affected_rows": 5,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943719Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_006",
+      "observation_id": "obs_006",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "treatment",
+        "mapping": {
+          "vedolizumab": "Vedolizumab"
+        }
+      },
+      "rationale": "Standardize 1 variant(s) [\"vedolizumab\"] to 'Vedolizumab' in column 'treatment'.",
+      "affected_rows": 1,
+      "confidence": 0.75,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943723Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_007",
+      "observation_id": "obs_007",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "diagnosis",
+        "mapping": {
+          "Crohn's Disease": "CD",
+          "Ulcerative Colitis": "UC",
+          "cd": "CD",
+          "control": "Control",
+          "uc": "UC"
+        }
+      },
+      "rationale": "Standardize 5 variant(s) [\"Crohn's Disease\", \"cd\", \"Ulcerative Colitis\", \"uc\", \"control\"] to 'CD' in column 'diagnosis'.",
+      "affected_rows": 8,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943732Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_008",
+      "observation_id": "obs_008",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "response",
+        "mapping": {
+          "Responder": "RESPONDER",
+          "non-responder": "Non-Responder",
+          "responder": "RESPONDER"
+        }
+      },
+      "rationale": "Standardize 3 variant(s) [\"non-responder\", \"Responder\", \"responder\"] to 'Non-Responder' in column 'response'.",
+      "affected_rows": 5,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943737Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_009",
+      "observation_id": "obs_009",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "treatment",
+        "mapping": {
+          "infliximab": "Infliximab",
+          "vedolizumab": "Vedolizumab"
+        }
+      },
+      "rationale": "Standardize 2 variant(s) [\"infliximab\", \"vedolizumab\"] to 'Infliximab' in column 'treatment'.",
+      "affected_rows": 2,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943741Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "treatment",
+        "missing_count": 2,
+        "missing_percentage": 25.0
+      },
+      "rationale": "Column 'treatment' has 25.0% missing values (2 rows). Consider whether this column should be included in analysis or if missing data can be imputed.",
+      "affected_rows": 2,
+      "confidence": 0.95,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943697Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_002",
+      "observation_id": "obs_002",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "response",
+        "missing_count": 2,
+        "missing_percentage": 25.0
+      },
+      "rationale": "Column 'response' has 25.0% missing values (2 rows). Consider whether this column should be included in analysis or if missing data can be imputed.",
+      "affected_rows": 2,
+      "confidence": 0.95,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:17.943699Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 4,
+    "columns_with_issues": 3,
+    "total_observations": 9,
+    "observations_by_severity": {
+      "error": 2,
+      "warning": 7,
+      "info": 0
+    },
+    "observations_by_type": {
+      "inconsistency": 7,
+      "completeness": 2
+    },
+    "data_quality_score": 0.0,
+    "recommendation": "Address 2 error-level issues before proceeding with analysis.",
+    "total_suggestions": 9,
+    "suggestions_by_status": {
+      "pending": 9,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 37
+  }
+}

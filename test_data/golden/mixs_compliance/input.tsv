@@ -1,0 +1,6 @@
+sample_id	sample_name	organism	host	body_site	collection_date	lat_lon	geo_loc_name	env_broad_scale	env_local_scale	env_medium	samp_collect_device
+S001	IBD_Patient_001	human gut metagenome	Homo sapiens	gut	2024-01-15	38.8977,-77.0365	USA: Washington DC	ENVO:01000254	ENVO:00002030	ENVO:00002003	sterile swab
+S002	IBD_Patient_002	gut metagenome	human	intestine	Jan 15, 2024	38.9,-77.0	USA	human gut	digestive tract	feces	swab
+S003	IBD_Patient_003	Homo sapiens	Homo sapiens	stool	2024-01-15	missing	not collected	forest	tree	soil
+S004	IBD_Patient_004	human gut metagenome	Homo sapiens	gut	not applicable	38.8977,-77.0365	USA: Washington DC	ENVO:01000254	ENVO:00002030	ENVO:00002003	sterile swab
+S005	IBD_Patient_005	human gut metagenome	Homo sapiens	gut	2024-01-15	38.8977,-77.0365	USA: Washington DC	gut environment	intestinal lumen	fecal material	sterile swab

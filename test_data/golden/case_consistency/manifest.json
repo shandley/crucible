@@ -1,0 +1,21 @@
+{
+  "name": "case_consistency",
+  "description": "Tests detection of case variants in categorical columns",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 3,
+    "types": ["Inconsistency"],
+    "columns_with_issues": ["diagnosis", "treatment", "response"]
+  },
+  "expected_suggestions": {
+    "min_count": 3,
+    "actions": ["Standardize"]
+  },
+  "notes": [
+    "CD/cd/Crohn's Disease should be detected as variants",
+    "UC/uc/Ulcerative Colitis should be detected as variants",
+    "Treatment and response columns should also flag case issues"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "mixs_compliance",
+  "description": "Tests MIxS (Minimum Information about any Sequence) standard compliance",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "microbiome",
+  "mixs_package": "human-gut",
+  "expected_observations": {
+    "min_count": 3,
+    "types": ["Inconsistency", "MissingValue"],
+    "columns_with_issues": ["collection_date", "lat_lon", "geo_loc_name", "env_broad_scale", "env_local_scale", "env_medium"]
+  },
+  "expected_suggestions": {
+    "min_count": 3,
+    "actions": ["Standardize", "ConvertDate", "Flag"]
+  },
+  "notes": [
+    "S001 is compliant - all fields correct with proper ENVO terms",
+    "S002 has non-ISO date format, free-text instead of ENVO terms",
+    "S003 has 'missing' for lat_lon (acceptable), empty samp_collect_device",
+    "S003 has wrong ENVO terms (forest/tree/soil for human-gut package)",
+    "S004 has 'not applicable' for date - may be acceptable for clinical samples",
+    "S005 uses free-text ENVO descriptions instead of proper ENVO IDs",
+    "host column: 'human' should be 'Homo sapiens'",
+    "organism: should be proper metagenome term from NCBI taxonomy"
+  ]
+}

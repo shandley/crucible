@@ -1,0 +1,23 @@
+{
+  "name": "accession_formats",
+  "description": "Tests validation of biological database accession formats",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "genomics",
+  "expected_observations": {
+    "min_count": 1,
+    "types": ["Inconsistency", "Outlier"],
+    "columns_with_issues": ["biosample", "sra_run", "bioproject", "genbank_acc", "gene_id"]
+  },
+  "expected_suggestions": {
+    "min_count": 1,
+    "actions": ["Flag", "Standardize"]
+  },
+  "notes": [
+    "S003 has multiple invalid accessions: invalid_acc, SRR123 (too short), PRJNA999 (too short), ABC, not_a_gene",
+    "S006 has lowercase accessions - case should be standardized",
+    "Valid formats: SAMN/SAME/SAMD for BioSample, SRR/ERR/DRR for SRA runs",
+    "Valid formats: PRJNA/PRJEB/PRJDB for BioProject",
+    "Valid RefSeq prefixes: NM_, NC_, XM_, NR_, XR_, WP_, YP_"
+  ]
+}

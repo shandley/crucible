@@ -1,0 +1,458 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T22:05:25.661361Z",
+  "updated_at": "2026-01-04T22:05:25.661361Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "test_data/golden/date_formats/input.tsv",
+    "hash": "sha256:a18f908c24bad3f62f8450d5b8dd4ee3a431647d7b437e990ffa22a412861526",
+    "size_bytes": 373,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 8,
+    "column_count": 4,
+    "analyzed_at": "2026-01-04T22:05:25.564659Z"
+  },
+  "context": {
+    "hints": {},
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005",
+          "S006",
+          "S007",
+          "S008"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005",
+              "S006",
+              "S007",
+              "S008"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1,
+            "S006": 1,
+            "S007": 1,
+            "S008": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "collection_date",
+        "position": 1,
+        "inferred_type": "date",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "constraints": [
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "2024-01-15",
+            "2024/02/20",
+            "15-Mar-2024",
+            "2024-04-10",
+            "April 5, 2024"
+          ],
+          "value_counts": {
+            "2024-01-15": 1,
+            "2024/02/20": 1,
+            "15-Mar-2024": 1,
+            "2024-04-10": 1,
+            "April 5, 2024": 1,
+            "2024-05-22": 1,
+            "2024-06-18": 1,
+            "07-03-2024": 1
+          }
+        },
+        "confidence": 0.62,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "processing_date",
+        "position": 2,
+        "inferred_type": "date",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "constraints": [
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "2024-01-16",
+            "02/21/2024",
+            "March 16, 2024",
+            "2024-04-11",
+            "04-06-2024"
+          ],
+          "value_counts": {
+            "2024-01-16": 1,
+            "02/21/2024": 1,
+            "March 16, 2024": 1,
+            "2024-04-11": 1,
+            "04-06-2024": 1,
+            "22/05/2024": 1,
+            "2024-06-19": 1,
+            "2024-07-04": 1
+          }
+        },
+        "confidence": 0.6950000000000001,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      },
+      {
+        "name": "analysis_date",
+        "position": 3,
+        "inferred_type": "date",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "constraints": [
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "2024-01-20",
+            "Feb 25, 2024",
+            "2024-03-20",
+            "2024-04-15",
+            "2024-04-10"
+          ],
+          "value_counts": {
+            "2024-01-20": 1,
+            "Feb 25, 2024": 1,
+            "2024-03-20": 1,
+            "2024-04-15": 1,
+            "2024-04-10": 1,
+            "May 27 2024": 1,
+            "2024-06-23": 1,
+            "July 8, 2024": 1
+          }
+        },
+        "confidence": 0.545,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ]
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "collection_date",
+      "description": "Mixed date formats detected (ISO (YYYY-MM-DD): 2024-01-15 (4 values); Year first (YYYY/MM/DD): 2024/02/20 (1 values); Month name (Mon DD YYYY): 15-Mar-2024 (2 values); US (MM-DD-YYYY): 07-03-2024 (1 values)). Recommend standardizing to ISO (YYYY-MM-DD)",
+      "evidence": {
+        "occurrences": 8,
+        "percentage": 100.0,
+        "sample_rows": [
+          2,
+          3,
+          5,
+          8
+        ],
+        "value_counts": {
+          "ISO (YYYY-MM-DD)": {
+            "count": 4,
+            "examples": [
+              "2024-01-15",
+              "2024-04-10",
+              "2024-05-22"
+            ]
+          },
+          "Month name (Mon DD YYYY)": {
+            "count": 2,
+            "examples": [
+              "15-Mar-2024",
+              "April 5, 2024"
+            ]
+          },
+          "US (MM-DD-YYYY)": {
+            "count": 1,
+            "examples": [
+              "07-03-2024"
+            ]
+          },
+          "Year first (YYYY/MM/DD)": {
+            "count": 1,
+            "examples": [
+              "2024/02/20"
+            ]
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:25.661109Z",
+      "detector": "date_format_validator"
+    },
+    {
+      "id": "obs_002",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "processing_date",
+      "description": "Mixed date formats detected (ISO (YYYY-MM-DD): 2024-01-16 (4 values); US (MM/DD/YYYY): 02/21/2024 (2 values); Month name (Mon DD YYYY): March 16, 2024 (1 values); US (MM-DD-YYYY): 04-06-2024 (1 values)). Recommend standardizing to ISO (YYYY-MM-DD)",
+      "evidence": {
+        "occurrences": 8,
+        "percentage": 100.0,
+        "sample_rows": [
+          2,
+          6,
+          3,
+          5
+        ],
+        "value_counts": {
+          "ISO (YYYY-MM-DD)": {
+            "count": 4,
+            "examples": [
+              "2024-01-16",
+              "2024-04-11",
+              "2024-06-19"
+            ]
+          },
+          "Month name (Mon DD YYYY)": {
+            "count": 1,
+            "examples": [
+              "March 16, 2024"
+            ]
+          },
+          "US (MM-DD-YYYY)": {
+            "count": 1,
+            "examples": [
+              "04-06-2024"
+            ]
+          },
+          "US (MM/DD/YYYY)": {
+            "count": 2,
+            "examples": [
+              "02/21/2024",
+              "22/05/2024"
+            ]
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:25.661217Z",
+      "detector": "date_format_validator"
+    },
+    {
+      "id": "obs_003",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "analysis_date",
+      "description": "Mixed date formats detected (ISO (YYYY-MM-DD): 2024-01-20 (5 values); Month name (Mon DD YYYY): Feb 25, 2024 (3 values)). Recommend standardizing to ISO (YYYY-MM-DD)",
+      "evidence": {
+        "occurrences": 8,
+        "percentage": 100.0,
+        "sample_rows": [
+          2,
+          6,
+          8
+        ],
+        "value_counts": {
+          "ISO (YYYY-MM-DD)": {
+            "count": 5,
+            "examples": [
+              "2024-01-20",
+              "2024-03-20",
+              "2024-04-15"
+            ]
+          },
+          "Month name (Mon DD YYYY)": {
+            "count": 3,
+            "examples": [
+              "Feb 25, 2024",
+              "May 27 2024",
+              "July 8, 2024"
+            ]
+          }
+        }
+      },
+      "confidence": 0.9,
+      "detected_at": "2026-01-04T22:05:25.661243Z",
+      "detector": "date_format_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "convert_date",
+      "priority": 2,
+      "parameters": {
+        "column": "collection_date",
+        "target_format": "ISO (YYYY-MM-DD)"
+      },
+      "rationale": "Standardize 8 date value(s) in column 'collection_date' to ISO format (YYYY-MM-DD). This ensures consistent date handling across all rows.",
+      "affected_rows": 8,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:25.661313Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_002",
+      "observation_id": "obs_002",
+      "action": "convert_date",
+      "priority": 2,
+      "parameters": {
+        "column": "processing_date",
+        "target_format": "ISO (YYYY-MM-DD)"
+      },
+      "rationale": "Standardize 8 date value(s) in column 'processing_date' to ISO format (YYYY-MM-DD). This ensures consistent date handling across all rows.",
+      "affected_rows": 8,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:25.661314Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_003",
+      "observation_id": "obs_003",
+      "action": "convert_date",
+      "priority": 2,
+      "parameters": {
+        "column": "analysis_date",
+        "target_format": "ISO (YYYY-MM-DD)"
+      },
+      "rationale": "Standardize 8 date value(s) in column 'analysis_date' to ISO format (YYYY-MM-DD). This ensures consistent date handling across all rows.",
+      "affected_rows": 8,
+      "confidence": 0.9,
+      "reversible": true,
+      "suggested_at": "2026-01-04T22:05:25.661316Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 4,
+    "columns_with_issues": 3,
+    "total_observations": 3,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 3,
+      "info": 0
+    },
+    "observations_by_type": {
+      "inconsistency": 3
+    },
+    "data_quality_score": 0.19,
+    "recommendation": "Data quality needs attention. Review all observations.",
+    "total_suggestions": 3,
+    "suggestions_by_status": {
+      "pending": 3,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 24
+  }
+}

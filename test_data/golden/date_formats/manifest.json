@@ -1,0 +1,22 @@
+{
+  "name": "date_formats",
+  "description": "Tests detection of mixed date formats requiring standardization",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "general",
+  "expected_observations": {
+    "min_count": 2,
+    "types": ["Inconsistency"],
+    "columns_with_issues": ["processing_date", "analysis_date"]
+  },
+  "expected_suggestions": {
+    "min_count": 2,
+    "actions": ["ConvertDate"]
+  },
+  "notes": [
+    "collection_date is mostly ISO format so may not trigger",
+    "processing_date has 5+ different formats - should detect",
+    "analysis_date also has mixed formats",
+    "All dates should be standardizable to ISO 8601 (YYYY-MM-DD)"
+  ]
+}

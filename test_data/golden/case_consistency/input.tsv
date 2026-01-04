@@ -1,0 +1,9 @@
+sample_id	diagnosis	treatment	response
+S001	CD	Infliximab	Responder
+S002	cd	infliximab	responder
+S003	Crohn's Disease	INFLIXIMAB	RESPONDER
+S004	UC	Vedolizumab	Non-Responder
+S005	uc	vedolizumab	non-responder
+S006	Ulcerative Colitis	Vedolizumab	Partial
+S007	Control	None	NA
+S008	control	none	na

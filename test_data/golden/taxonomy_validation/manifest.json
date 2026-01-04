@@ -1,0 +1,25 @@
+{
+  "name": "taxonomy_validation",
+  "description": "Tests NCBI taxonomy validation including abbreviations and typos",
+  "version": "1.0.0",
+  "created": "2025-01-04",
+  "domain": "microbiome",
+  "mixs_package": "human-gut",
+  "expected_observations": {
+    "min_count": 4,
+    "types": ["Inconsistency"],
+    "columns_with_issues": ["organism", "host"]
+  },
+  "expected_suggestions": {
+    "min_count": 4,
+    "actions": ["Standardize"]
+  },
+  "notes": [
+    "E. coli should be flagged as abbreviation → Escherichia coli",
+    "B. fragilis should be flagged as abbreviation → Bacteroides fragilis",
+    "C. diff should be flagged as abbreviation → Clostridioides difficile",
+    "Pseudomonas aeroginosa is a TYPO → Pseudomonas aeruginosa",
+    "human/mouse are common names that may be standardized",
+    "H. sapiens is abbreviation for Homo sapiens"
+  ]
+}
