@@ -21,11 +21,16 @@
 //! ```
 
 mod mixs;
+mod ontology;
 mod taxonomy;
 mod validators;
 
 pub use mixs::{
     MixsField, MixsFieldRequirement, MixsPackage, MixsSchema, MIXS_CORE_FIELDS,
+};
+pub use ontology::{
+    MatchType, OntologyMapping, OntologyStats, OntologyTerm, OntologyType, OntologyValidationResult,
+    OntologyValidator,
 };
 pub use taxonomy::{TaxonomyEntry, TaxonomyStats, TaxonomyValidator};
 pub use validators::{BioValidator, MixsComplianceValidator};

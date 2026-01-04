@@ -4,6 +4,7 @@
 //! MIxS compliance checking, taxonomy validation, and ontology term mapping.
 
 use crate::bio::mixs::{MixsPackage, MixsSchema};
+use crate::bio::ontology::{OntologyType, OntologyValidator};
 use crate::bio::taxonomy::{TaxonomyValidationResult, TaxonomyValidator};
 use crate::input::DataTable;
 use crate::schema::TableSchema;
@@ -29,6 +30,8 @@ pub struct MixsComplianceValidator {
     package: Option<MixsPackage>,
     /// Taxonomy validator for organism fields.
     taxonomy_validator: TaxonomyValidator,
+    /// Ontology validator for environmental and anatomical terms.
+    ontology_validator: OntologyValidator,
 }
 
 impl MixsComplianceValidator {
@@ -38,6 +41,7 @@ impl MixsComplianceValidator {
             schema: MixsSchema::new(),
             package: None,
             taxonomy_validator: TaxonomyValidator::new(),
+            ontology_validator: OntologyValidator::new(),
         }
     }
 
@@ -491,6 +495,153 @@ impl BioValidator for MixsComplianceValidator {
                     );
                 }
             }
+
+            // Check for ontology columns (ENVO, UBERON, MONDO)
+            if let Some(ontology_type) = classify_ontology_column(&col.name) {
+                let target_ontology = match ontology_type {
+                    OntologyColumnType::Envo => OntologyType::Envo,
+                    OntologyColumnType::Uberon => OntologyType::Uberon,
+                    OntologyColumnType::Mondo => OntologyType::Mondo,
+                };
+
+                let ontology_name = match ontology_type {
+                    OntologyColumnType::Envo => "ENVO (Environmental Ontology)",
+                    OntologyColumnType::Uberon => "UBERON (Anatomy Ontology)",
+                    OntologyColumnType::Mondo => "MONDO (Disease Ontology)",
+                };
+
+                let mut unmapped_terms: Vec<(usize, String, Vec<String>)> = Vec::new();
+                let mut invalid_ids: Vec<(usize, String)> = Vec::new();
+                let mut _valid_terms = 0; // Prefixed with _ to suppress warning - could be used for stats
+
+                for (row_idx, row) in data.rows.iter().enumerate() {
+                    if let Some(value) = row.get(col_idx) {
+                        if value.is_empty()
+                            || value.to_lowercase() == "missing"
+                            || value.to_lowercase() == "not applicable"
+                            || value.to_lowercase() == "na"
+                        {
+                            continue;
+                        }
+
+                        // Check if value looks like an ontology ID (e.g., ENVO:00000446)
+                        if value.contains(':') && value.chars().any(|c| c.is_ascii_digit()) {
+                            // Validate the ontology ID
+                            match self.ontology_validator.validate_id(value) {
+                                crate::bio::ontology::OntologyValidationResult::Valid { .. } => {
+                                    _valid_terms += 1;
+                                }
+                                crate::bio::ontology::OntologyValidationResult::UnknownTerm { .. }
+                                | crate::bio::ontology::OntologyValidationResult::InvalidFormat { .. } => {
+                                    invalid_ids.push((row_idx, value.clone()));
+                                }
+                            }
+                        } else {
+                            // Free-text term - suggest ontology mappings
+                            let mappings =
+                                self.ontology_validator.suggest_mappings(value, Some(target_ontology));
+                            if mappings.is_empty() {
+                                unmapped_terms.push((row_idx, value.clone(), vec![]));
+                            } else {
+                                let suggestions: Vec<String> = mappings
+                                    .iter()
+                                    .map(|m| format!("{} ({})", m.term_id, m.term_label))
+                                    .collect();
+                                unmapped_terms.push((row_idx, value.clone(), suggestions));
+                            }
+                        }
+                    }
+                }
+
+                // Report unmapped free-text terms with suggestions
+                if !unmapped_terms.is_empty() {
+                    let terms_with_suggestions: Vec<_> =
+                        unmapped_terms.iter().filter(|t| !t.2.is_empty()).collect();
+                    let terms_without_suggestions: Vec<_> =
+                        unmapped_terms.iter().filter(|t| t.2.is_empty()).collect();
+
+                    if !terms_with_suggestions.is_empty() {
+                        let sample = &terms_with_suggestions[0];
+                        observations.push(
+                            Observation::new(
+                                ObservationType::Inconsistency,
+                                Severity::Warning,
+                                &col.name,
+                                format!(
+                                    "Free-text values could be mapped to {}. Consider using ontology IDs for FAIR compliance.",
+                                    ontology_name
+                                ),
+                            )
+                            .with_evidence(
+                                Evidence::new()
+                                    .with_value(json!({
+                                        "example_term": sample.1,
+                                        "suggested_mappings": sample.2,
+                                    }))
+                                    .with_occurrences(terms_with_suggestions.len())
+                                    .with_sample_rows(
+                                        terms_with_suggestions.iter().take(5).map(|t| t.0).collect(),
+                                    ),
+                            )
+                            .with_confidence(0.8)
+                            .with_detector("OntologyValidator"),
+                        );
+                    }
+
+                    if !terms_without_suggestions.is_empty() {
+                        observations.push(
+                            Observation::new(
+                                ObservationType::ConstraintViolation,
+                                Severity::Info,
+                                &col.name,
+                                format!(
+                                    "Unrecognized terms for {} ({} values). Consider verifying against the ontology.",
+                                    ontology_name,
+                                    terms_without_suggestions.len()
+                                ),
+                            )
+                            .with_evidence(
+                                Evidence::new()
+                                    .with_value(json!(terms_without_suggestions
+                                        .iter()
+                                        .take(5)
+                                        .map(|t| &t.1)
+                                        .collect::<Vec<_>>()))
+                                    .with_occurrences(terms_without_suggestions.len()),
+                            )
+                            .with_confidence(0.5)
+                            .with_detector("OntologyValidator"),
+                        );
+                    }
+                }
+
+                // Report invalid ontology IDs
+                if !invalid_ids.is_empty() {
+                    let sample = &invalid_ids[0];
+                    observations.push(
+                        Observation::new(
+                            ObservationType::PatternViolation,
+                            Severity::Error,
+                            &col.name,
+                            format!(
+                                "Invalid ontology IDs found ({} occurrences). IDs should match {} terms.",
+                                invalid_ids.len(),
+                                ontology_name
+                            ),
+                        )
+                        .with_evidence(
+                            Evidence::new()
+                                .with_value(json!({
+                                    "example_id": sample.1,
+                                }))
+                                .with_occurrences(invalid_ids.len())
+                                .with_sample_rows(invalid_ids.iter().take(5).map(|t| t.0).collect()),
+                        )
+                        .with_confidence(0.9)
+                        .with_detector("OntologyValidator"),
+                    );
+                }
+            }
         }
 
         observations
@@ -499,6 +650,82 @@ impl BioValidator for MixsComplianceValidator {
     fn name(&self) -> &'static str {
         "MixsComplianceValidator"
     }
+}
+
+/// Ontology column classification for validation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OntologyColumnType {
+    /// ENVO environmental terms (env_broad_scale, env_local_scale, env_medium)
+    Envo,
+    /// UBERON anatomical terms (body_site, tissue)
+    Uberon,
+    /// MONDO disease terms (disease, host_disease)
+    Mondo,
+}
+
+/// Classify a column as an ontology column if applicable.
+fn classify_ontology_column(col_name: &str) -> Option<OntologyColumnType> {
+    let name = col_name.to_lowercase();
+
+    // ENVO columns (environmental terms)
+    let envo_columns = [
+        "env_broad_scale",
+        "env_local_scale",
+        "env_medium",
+        "broad_scale_environmental_context",
+        "local_environmental_context",
+        "environmental_medium",
+        "biome",
+        "environment",
+        "env_biome",
+        "env_feature",
+        "env_material",
+        "habitat",
+    ];
+    if envo_columns.contains(&name.as_str()) || name.contains("env_") && name.contains("scale") {
+        return Some(OntologyColumnType::Envo);
+    }
+
+    // UBERON columns (anatomical terms)
+    let uberon_columns = [
+        "body_site",
+        "tissue",
+        "tissue_type",
+        "body_part",
+        "sample_site",
+        "anatomical_site",
+        "organ",
+        "body_habitat",
+        "isolation_source",
+    ];
+    if uberon_columns.contains(&name.as_str())
+        || name.contains("body_site")
+        || name.contains("tissue")
+        || name.contains("anatomical")
+    {
+        return Some(OntologyColumnType::Uberon);
+    }
+
+    // MONDO columns (disease terms)
+    let mondo_columns = [
+        "disease",
+        "diagnosis",
+        "condition",
+        "host_disease",
+        "disease_status",
+        "health_status",
+        "clinical_diagnosis",
+        "primary_diagnosis",
+        "disease_name",
+    ];
+    if mondo_columns.contains(&name.as_str())
+        || name.contains("disease")
+        || name.contains("diagnosis")
+    {
+        return Some(OntologyColumnType::Mondo);
+    }
+
+    None
 }
 
 /// Check if a column name indicates taxonomy content.
@@ -694,5 +921,127 @@ mod tests {
         assert!(!is_taxonomy_column("diagnosis"));
         assert!(!is_taxonomy_column("treatment"));
         assert!(!is_taxonomy_column("age"));
+    }
+
+    #[test]
+    fn test_classify_ontology_column() {
+        // ENVO columns
+        assert_eq!(
+            classify_ontology_column("env_broad_scale"),
+            Some(OntologyColumnType::Envo)
+        );
+        assert_eq!(
+            classify_ontology_column("env_local_scale"),
+            Some(OntologyColumnType::Envo)
+        );
+        assert_eq!(
+            classify_ontology_column("env_medium"),
+            Some(OntologyColumnType::Envo)
+        );
+        assert_eq!(
+            classify_ontology_column("biome"),
+            Some(OntologyColumnType::Envo)
+        );
+        assert_eq!(
+            classify_ontology_column("habitat"),
+            Some(OntologyColumnType::Envo)
+        );
+
+        // UBERON columns
+        assert_eq!(
+            classify_ontology_column("body_site"),
+            Some(OntologyColumnType::Uberon)
+        );
+        assert_eq!(
+            classify_ontology_column("tissue"),
+            Some(OntologyColumnType::Uberon)
+        );
+        assert_eq!(
+            classify_ontology_column("tissue_type"),
+            Some(OntologyColumnType::Uberon)
+        );
+        assert_eq!(
+            classify_ontology_column("isolation_source"),
+            Some(OntologyColumnType::Uberon)
+        );
+
+        // MONDO columns
+        assert_eq!(
+            classify_ontology_column("disease"),
+            Some(OntologyColumnType::Mondo)
+        );
+        assert_eq!(
+            classify_ontology_column("diagnosis"),
+            Some(OntologyColumnType::Mondo)
+        );
+        assert_eq!(
+            classify_ontology_column("host_disease"),
+            Some(OntologyColumnType::Mondo)
+        );
+        assert_eq!(
+            classify_ontology_column("clinical_diagnosis"),
+            Some(OntologyColumnType::Mondo)
+        );
+
+        // Should NOT match any ontology
+        assert_eq!(classify_ontology_column("sample_id"), None);
+        assert_eq!(classify_ontology_column("age"), None);
+        assert_eq!(classify_ontology_column("organism"), None);
+    }
+
+    #[test]
+    fn test_mixs_validator_detects_ontology_columns() {
+        let data = DataTable {
+            headers: vec![
+                "sample_id".to_string(),
+                "diagnosis".to_string(),
+                "body_site".to_string(),
+                "env_broad_scale".to_string(),
+            ],
+            rows: vec![
+                vec![
+                    "S001".to_string(),
+                    "Crohn's disease".to_string(),
+                    "gut".to_string(),
+                    "human-associated habitat".to_string(),
+                ],
+                vec![
+                    "S002".to_string(),
+                    "ulcerative colitis".to_string(),
+                    "intestine".to_string(),
+                    "ENVO:00002030".to_string(), // valid ENVO ID
+                ],
+            ],
+            delimiter: b'\t',
+        };
+
+        let mut schema = TableSchema::new();
+        schema.columns = vec![
+            ColumnSchema::new("sample_id", 0),
+            ColumnSchema::new("diagnosis", 1),
+            ColumnSchema::new("body_site", 2),
+            ColumnSchema::new("env_broad_scale", 3),
+        ];
+
+        let validator = MixsComplianceValidator::new().with_package(MixsPackage::HumanGut);
+        let observations = validator.validate(&data, &schema);
+
+        // Should have ontology-related observations
+        let ontology_obs: Vec<_> = observations
+            .iter()
+            .filter(|o| o.detector == "OntologyValidator")
+            .collect();
+
+        // Should detect disease terms for mapping
+        let disease_obs = ontology_obs
+            .iter()
+            .any(|o| o.column == "diagnosis");
+        assert!(disease_obs, "Should detect diagnosis column for ontology mapping");
+
+        // Should detect body_site terms for mapping
+        let body_site_obs = ontology_obs
+            .iter()
+            .any(|o| o.column == "body_site");
+        assert!(body_site_obs, "Should detect body_site column for ontology mapping");
     }
 }
