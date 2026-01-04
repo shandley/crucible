@@ -113,22 +113,26 @@ Missing mandatory fields:
 
 ---
 
-### Phase Bio-2: Taxonomy Validation (Partially Complete)
+### Phase Bio-2: Taxonomy Validation ✅ COMPLETE
 
 **Goal**: Validate and standardize organism/taxonomy fields.
 
 #### Deliverables
 
-- [x] TaxonomyValidator (basic)
-  - [x] Validate common scientific names (20+ model organisms)
-  - [x] Detect common abbreviations (E. coli → Escherichia coli)
-  - [x] Suggest corrections for typos (Levenshtein distance ≤2)
-  - [x] Case error detection
-- [ ] NCBI Taxonomy data loader (future enhancement)
-  - [ ] Download and parse names.dmp, nodes.dmp
-  - [ ] Build efficient lookup structure (prefix tree or hash)
-  - [ ] Support offline validation (no API dependency)
-- [x] New observation types (via TaxonomyValidationResult)
+- [x] TaxonomyValidator (expanded)
+  - [x] Validate ~150 common organisms (expanded from 20)
+  - [x] Model organisms, gut/oral/skin microbiome, pathogens, viruses
+  - [x] Major phyla, classes, families, genera
+  - [x] Metagenome terms (gut, oral, skin, marine, soil, etc.)
+- [x] NCBI Taxonomy data loader
+  - [x] `from_ncbi_dump()` method to load names.dmp and nodes.dmp
+  - [x] Parse scientific names, common names, ranks, parent taxids
+  - [x] Support offline validation with full NCBI database
+  - [x] TaxonomyStats for database info
+- [x] Taxonomy column auto-detection
+  - [x] 25+ column name patterns recognized
+  - [x] Exact, partial, and suffix matching
+- [x] Observation types (via TaxonomyValidationResult)
   - [x] `Valid` - name matches NCBI
   - [x] `Abbreviation` - should be expanded
   - [x] `CaseError` - incorrect capitalization
