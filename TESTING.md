@@ -276,6 +276,59 @@ cargo test -p crucible --test ontology_accuracy_test
 - [UBERON](https://github.com/obophenotype/uberon) - Anatomy Ontology
 - [MONDO](https://github.com/monarch-initiative/mondo) - Disease Ontology
 
+### 8. Fuzz Testing (5 targets)
+
+Fuzz testing uses [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) with libFuzzer to find crashes and panics in validators and parsers. This is critical for scientific software that must handle arbitrary user input gracefully.
+
+```
+crates/crucible/fuzz/
+├── Cargo.toml
+├── README.md
+└── fuzz_targets/
+    ├── fuzz_taxonomy.rs    # Taxonomy validator fuzzing
+    ├── fuzz_accession.rs   # Accession validator fuzzing
+    ├── fuzz_ontology.rs    # Ontology mapper fuzzing
+    ├── fuzz_parser.rs      # CSV/TSV parser fuzzing
+    └── fuzz_date.rs        # Date detection/type inference fuzzing
+```
+
+**Fuzz targets and coverage:**
+
+| Target | Component | Tests |
+|--------|-----------|-------|
+| `fuzz_taxonomy` | TaxonomyValidator | UTF-8 handling, abbreviation expansion |
+| `fuzz_accession` | AccessionValidator | Pattern matching, URL generation |
+| `fuzz_ontology` | OntologyValidator | ID lookup, suggestion algorithms |
+| `fuzz_parser` | Parser | Delimiter detection, malformed files |
+| `fuzz_date` | Type inference | Date regex, analysis pipeline |
+
+**Prerequisites:**
+```bash
+# Requires nightly Rust via rustup
+rustup install nightly
+cargo install cargo-fuzz
+```
+
+**Run fuzz tests:**
+```bash
+cd crates/crucible
+
+# List available targets
+cargo +nightly fuzz list
+
+# Run a specific target (press Ctrl+C to stop)
+cargo +nightly fuzz run fuzz_taxonomy
+
+# Run with time limit (60 seconds)
+cargo +nightly fuzz run fuzz_taxonomy -- -max_total_time=60
+```
+
+**Properties verified:**
+- Validators never panic on any UTF-8 input
+- Validators never panic on lossy UTF-8 conversion
+- Parser handles malformed files gracefully
+- No unbounded memory allocation on large inputs
+
 ---
 
 ## Bioinformatics Validation
@@ -434,6 +487,9 @@ cargo test -p crucible --test real_world_validation_test
 # Run ontology accuracy tests
 cargo test -p crucible --test ontology_accuracy_test
 
+# Run fuzz tests (requires nightly)
+cd crates/crucible && cargo +nightly fuzz run fuzz_taxonomy -- -max_total_time=60
+
 # Check test coverage (requires cargo-tarpaulin)
 cargo tarpaulin --out Html
 ```
@@ -554,6 +610,7 @@ test:
 | Property tests | 32 | 50+ |
 | Real-world validation | 14 | 25+ |
 | Ontology accuracy | 18 | 30+ |
+| Fuzz targets | 5 | 10+ |
 | Doc tests | 9 | 20+ |
 | **Total tests** | **246** | **400+** |
 | Code coverage | ~75% | 85%+ |
@@ -603,6 +660,7 @@ If you find a validation issue:
 | 0.1.1 | 214 | ~78% | Added property-based tests, golden tests |
 | 0.1.2 | 228 | ~80% | Added real-world validation tests |
 | 0.1.3 | 246 | ~82% | Added ontology accuracy tests, fixed duplicate MONDO IDs |
+| 0.1.4 | 246 | ~82% | Added fuzz testing infrastructure (5 targets) |
 
 ---
 

@@ -1,0 +1,52 @@
+[package]
+name = "crucible-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+tempfile = "3"
+
+[dependencies.crucible]
+path = ".."
+
+# Fuzz targets for validators
+[[bin]]
+name = "fuzz_taxonomy"
+path = "fuzz_targets/fuzz_taxonomy.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_accession"
+path = "fuzz_targets/fuzz_accession.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_ontology"
+path = "fuzz_targets/fuzz_ontology.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_parser"
+path = "fuzz_targets/fuzz_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_date"
+path = "fuzz_targets/fuzz_date.rs"
+test = false
+doc = false
+bench = false
