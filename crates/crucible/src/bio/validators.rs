@@ -3,6 +3,7 @@
 //! This module provides validators for biological metadata including
 //! MIxS compliance checking, taxonomy validation, and ontology term mapping.
 
+use crate::bio::accession::{AccessionType, AccessionValidator};
 use crate::bio::mixs::{MixsPackage, MixsSchema};
 use crate::bio::ontology::{OntologyType, OntologyValidator};
 use crate::bio::taxonomy::{TaxonomyValidationResult, TaxonomyValidator};
@@ -32,6 +33,8 @@ pub struct MixsComplianceValidator {
     taxonomy_validator: TaxonomyValidator,
     /// Ontology validator for environmental and anatomical terms.
     ontology_validator: OntologyValidator,
+    /// Accession validator for database identifiers.
+    accession_validator: AccessionValidator,
 }
 
 impl MixsComplianceValidator {
@@ -42,6 +45,7 @@ impl MixsComplianceValidator {
             package: None,
             taxonomy_validator: TaxonomyValidator::new(),
             ontology_validator: OntologyValidator::new(),
+            accession_validator: AccessionValidator::new(),
         }
     }
 
@@ -639,6 +643,79 @@ impl BioValidator for MixsComplianceValidator {
                         )
                         .with_confidence(0.9)
                         .with_detector("OntologyValidator"),
+                    );
+                }
+            }
+
+            // Check for accession columns
+            if let Some(expected_type) = self.accession_validator.detect_accession_column(&col.name) {
+                let mut invalid_accessions: Vec<(usize, String, String)> = Vec::new();
+                let mut _valid_count = 0;
+
+                for (row_idx, row) in data.rows.iter().enumerate() {
+                    if let Some(value) = row.get(col_idx) {
+                        if value.is_empty()
+                            || value.to_lowercase() == "missing"
+                            || value.to_lowercase() == "not applicable"
+                            || value.to_lowercase() == "na"
+                        {
+                            continue;
+                        }
+
+                        let result = self.accession_validator.validate(value);
+                        if result.is_valid {
+                            _valid_count += 1;
+                            // Check if type matches expected
+                            if let Some(actual_type) = result.accession_type {
+                                if actual_type != expected_type {
+                                    invalid_accessions.push((
+                                        row_idx,
+                                        value.clone(),
+                                        format!(
+                                            "Expected {} but found {}",
+                                            expected_type.database(),
+                                            actual_type.database()
+                                        ),
+                                    ));
+                                }
+                            }
+                        } else {
+                            invalid_accessions.push((
+                                row_idx,
+                                value.clone(),
+                                result.error.unwrap_or_else(|| "Invalid format".to_string()),
+                            ));
+                        }
+                    }
+                }
+
+                if !invalid_accessions.is_empty() {
+                    let sample = &invalid_accessions[0];
+                    observations.push(
+                        Observation::new(
+                            ObservationType::PatternViolation,
+                            Severity::Warning,
+                            &col.name,
+                            format!(
+                                "Invalid {} accessions found ({} occurrences). {}",
+                                expected_type.database(),
+                                invalid_accessions.len(),
+                                expected_type.format_description()
+                            ),
+                        )
+                        .with_evidence(
+                            Evidence::new()
+                                .with_value(json!({
+                                    "example": sample.1,
+                                    "error": sample.2,
+                                }))
+                                .with_occurrences(invalid_accessions.len())
+                                .with_sample_rows(
+                                    invalid_accessions.iter().take(5).map(|t| t.0).collect(),
+                                ),
+                        )
+                        .with_confidence(0.9)
+                        .with_detector("AccessionValidator"),
                     );
                 }
             }

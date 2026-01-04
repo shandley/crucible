@@ -7,6 +7,7 @@
 //! - NCBI Taxonomy validation
 //! - Ontology term mapping (ENVO, UBERON, MONDO)
 //! - BioSample submission pre-validation
+//! - Database accession validation (BioSample, SRA, BioProject, GenBank, RefSeq)
 //!
 //! # Example
 //!
@@ -20,12 +21,16 @@
 //! let observations = validator.validate(&data, &schema);
 //! ```
 
+mod accession;
 mod biosample;
 mod mixs;
 mod ontology;
 mod taxonomy;
 mod validators;
 
+pub use accession::{
+    AccessionStats, AccessionType, AccessionValidationResult, AccessionValidator,
+};
 pub use biosample::{
     BioSampleValidator, IssueCategory, NcbiReadiness, ReadinessIssue, ReadinessStats,
 };
