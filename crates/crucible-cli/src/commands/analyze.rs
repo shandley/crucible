@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 use crucible::{
-    bio::{BioValidator, MixsComplianceValidator, MixsPackage},
+    bio::{BioSampleValidator, BioValidator, MixsComplianceValidator, MixsPackage},
     AnthropicProvider, ContextHints, Crucible, CurationContext, CurationLayer, LlmConfig,
     MockProvider, OllamaProvider, OpenAIProvider, Parser, Severity,
 };
@@ -84,6 +84,55 @@ pub fn run(
 
         // Merge bio observations into result
         result.observations.extend(bio_observations);
+
+        // Run NCBI BioSample pre-validation
+        let biosample_validator = BioSampleValidator::new();
+        let detected_pkg = if is_auto {
+            validator.detect_package(&table, &result.schema)
+        } else {
+            Some(mixs_pkg)
+        };
+        let readiness = biosample_validator.check_readiness(&table, &result.schema, detected_pkg);
+
+        println!();
+        let ready_status = if readiness.is_ready {
+            "READY".green().bold()
+        } else {
+            "NOT READY".red().bold()
+        };
+        println!(
+            "{} {}% ({})",
+            "NCBI Readiness:".yellow().bold(),
+            readiness.score,
+            ready_status
+        );
+
+        if verbose && !readiness.blocking_issues.is_empty() {
+            println!();
+            println!("{}", "Blocking issues (must fix):".red());
+            for issue in &readiness.blocking_issues {
+                println!("  {} {}", "✗".red(), issue.description);
+            }
+        }
+
+        if verbose && !readiness.warning_issues.is_empty() {
+            println!();
+            println!("{}", "Warnings (should fix):".yellow());
+            for issue in readiness.warning_issues.iter().take(5) {
+                println!("  {} {}", "⚠".yellow(), issue.description);
+            }
+            if readiness.warning_issues.len() > 5 {
+                println!(
+                    "  {} ... and {} more",
+                    "⚠".yellow(),
+                    readiness.warning_issues.len() - 5
+                );
+            }
+        }
+
+        // Add BioSample observations to result
+        let biosample_observations = biosample_validator.to_observations(&readiness);
+        result.observations.extend(biosample_observations);
     }
 
     if verbose {

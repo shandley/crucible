@@ -20,11 +20,15 @@
 //! let observations = validator.validate(&data, &schema);
 //! ```
 
+mod biosample;
 mod mixs;
 mod ontology;
 mod taxonomy;
 mod validators;
 
+pub use biosample::{
+    BioSampleValidator, IssueCategory, NcbiReadiness, ReadinessIssue, ReadinessStats,
+};
 pub use mixs::{
     MixsField, MixsFieldRequirement, MixsPackage, MixsSchema, MIXS_CORE_FIELDS,
 };

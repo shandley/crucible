@@ -125,6 +125,18 @@ impl MixsPackage {
         }
     }
 
+    /// Check if this is a human-associated package.
+    pub fn is_human_package(&self) -> bool {
+        matches!(
+            self,
+            MixsPackage::HumanAssociated
+                | MixsPackage::HumanGut
+                | MixsPackage::HumanOral
+                | MixsPackage::HumanSkin
+                | MixsPackage::HumanVaginal
+        )
+    }
+
     /// Parse a package from string (case-insensitive, flexible matching).
     pub fn from_str_flexible(s: &str) -> Option<Self> {
         let s = s.to_lowercase().replace(['-', '_', ' '], "");
