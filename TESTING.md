@@ -329,6 +329,75 @@ cargo +nightly fuzz run fuzz_taxonomy -- -max_total_time=60
 - Parser handles malformed files gracefully
 - No unbounded memory allocation on large inputs
 
+### 9. Performance Benchmarks (3 suites)
+
+Performance benchmarks use [criterion](https://github.com/bheisler/criterion.rs) to measure and track performance of critical code paths. This ensures Crucible remains fast as features are added.
+
+```
+crates/crucible/benches/
+├── parser_benchmarks.rs      # File parsing performance
+├── validator_benchmarks.rs   # Validator performance
+└── analysis_benchmarks.rs    # Full pipeline performance
+```
+
+**Benchmark suites:**
+
+| Suite | Benchmarks | Measures |
+|-------|------------|----------|
+| `parser_benchmarks` | 3 groups | TSV/CSV parsing, column scaling |
+| `validator_benchmarks` | 5 groups | Taxonomy, accession, ontology validation |
+| `analysis_benchmarks` | 4 groups | Full analysis pipeline, instance creation |
+
+**Parser benchmarks:**
+```
+parse_tsv/rows/100        - Parse 100-row TSV files
+parse_tsv/rows/1000       - Parse 1,000-row TSV files
+parse_tsv/rows/10000      - Parse 10,000-row TSV files
+parse_csv/rows/*          - Same for CSV format
+parse_column_scaling/*    - Scaling with 5-50 columns
+```
+
+**Validator benchmarks:**
+```
+taxonomy_validation/single          - Single organism validation
+taxonomy_validation/batch_15        - Batch of 15 organisms
+accession_validation/single         - Single accession validation
+ontology_mapping/suggest_mappings   - Fuzzy term matching
+validator_creation/*                - Instance creation overhead
+input_length_scaling/*              - Performance vs input length
+```
+
+**Analysis benchmarks:**
+```
+full_analysis/biomedical_rows/*   - Real biomedical metadata
+analysis_baseline/minimal_rows/*  - Minimal overhead measurement
+crucible_creation/*               - Instance creation
+result_processing/*               - Result access patterns
+```
+
+**Run benchmarks:**
+```bash
+# Run all benchmarks
+cargo bench
+
+# Run specific suite
+cargo bench --bench parser_benchmarks
+cargo bench --bench validator_benchmarks
+cargo bench --bench analysis_benchmarks
+
+# Run with filtering
+cargo bench -- taxonomy
+
+# Quick validation (no measurements)
+cargo bench -- --test
+```
+
+**Benchmark reports:**
+HTML reports are generated in `target/criterion/` with:
+- Performance measurements with confidence intervals
+- Comparison with previous runs
+- Regression detection
+
 ---
 
 ## Bioinformatics Validation
@@ -490,6 +559,12 @@ cargo test -p crucible --test ontology_accuracy_test
 # Run fuzz tests (requires nightly)
 cd crates/crucible && cargo +nightly fuzz run fuzz_taxonomy -- -max_total_time=60
 
+# Run performance benchmarks
+cargo bench
+
+# Quick benchmark validation
+cargo bench -- --test
+
 # Check test coverage (requires cargo-tarpaulin)
 cargo tarpaulin --out Html
 ```
@@ -611,6 +686,7 @@ test:
 | Real-world validation | 14 | 25+ |
 | Ontology accuracy | 18 | 30+ |
 | Fuzz targets | 5 | 10+ |
+| Benchmark suites | 3 | 5+ |
 | Doc tests | 9 | 20+ |
 | **Total tests** | **246** | **400+** |
 | Code coverage | ~75% | 85%+ |
@@ -661,6 +737,7 @@ If you find a validation issue:
 | 0.1.2 | 228 | ~80% | Added real-world validation tests |
 | 0.1.3 | 246 | ~82% | Added ontology accuracy tests, fixed duplicate MONDO IDs |
 | 0.1.4 | 246 | ~82% | Added fuzz testing infrastructure (5 targets) |
+| 0.1.5 | 246 | ~82% | Added performance benchmarks with criterion (3 suites) |
 
 ---
 
