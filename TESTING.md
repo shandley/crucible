@@ -398,6 +398,53 @@ HTML reports are generated in `target/criterion/` with:
 - Comparison with previous runs
 - Regression detection
 
+### 10. MIxS Schema Conformance Tests (31 tests)
+
+MIxS conformance tests verify that Crucible's MIxS implementation matches the official [GSC MIxS 6.0 specification](https://genomicsstandardsconsortium.github.io/mixs/).
+
+```
+crates/crucible/tests/mixs_conformance_test.rs
+├── core_mandatory_field_tests    # 5 tests for 8 core mandatory fields
+├── environmental_package_tests   # 7 tests for 15 packages
+├── package_specific_tests        # 4 tests for package-specific fields
+├── field_alias_tests             # 4 tests for alias resolution
+├── field_format_tests            # 4 tests for format specifications
+├── requirement_level_tests       # 2 tests for M/C/X/- codes
+├── schema_coverage_tests         # 3 tests for completeness
+└── builder_tests                 # 2 tests for field construction
+```
+
+**MIxS 6.0 Reference Data Verified:**
+
+| Category | Count | Verified |
+|----------|-------|----------|
+| Core mandatory fields | 8 | investigation_type, project_name, lat_lon, geo_loc_name, collection_date, env_broad_scale, env_local_scale, env_medium |
+| Environmental packages | 15 | air, built environment, host-associated, human-associated, human-gut, human-oral, human-skin, human-vaginal, microbial mat/biofilm, miscellaneous, plant-associated, sediment, soil, wastewater/sludge, water |
+| Human packages | 5 | Correctly identified via is_human_package() |
+
+**Key conformance tests:**
+```
+test_all_core_mandatory_fields_defined
+test_core_mandatory_fields_have_correct_requirement
+test_all_15_packages_defined
+test_package_names_match_spec
+test_human_gut_has_required_fields
+test_soil_has_required_fields
+test_water_has_required_fields
+test_ontology_fields_have_ontology_reference
+test_collection_date_aliases
+test_lat_lon_aliases
+test_case_insensitive_field_matching
+```
+
+**Run MIxS conformance tests:**
+```bash
+cargo test -p crucible --test mixs_conformance_test
+
+# View conformance summary
+cargo test -p crucible --test mixs_conformance_test test_mixs_conformance_summary -- --nocapture
+```
+
 ---
 
 ## Bioinformatics Validation
@@ -556,6 +603,9 @@ cargo test -p crucible --test real_world_validation_test
 # Run ontology accuracy tests
 cargo test -p crucible --test ontology_accuracy_test
 
+# Run MIxS conformance tests
+cargo test -p crucible --test mixs_conformance_test
+
 # Run fuzz tests (requires nightly)
 cd crates/crucible && cargo +nightly fuzz run fuzz_taxonomy -- -max_total_time=60
 
@@ -687,8 +737,9 @@ test:
 | Ontology accuracy | 18 | 30+ |
 | Fuzz targets | 5 | 10+ |
 | Benchmark suites | 3 | 5+ |
+| MIxS conformance | 31 | 40+ |
 | Doc tests | 9 | 20+ |
-| **Total tests** | **246** | **400+** |
+| **Total tests** | **277** | **450+** |
 | Code coverage | ~75% | 85%+ |
 | Bio module coverage | ~90% | 95%+ |
 
@@ -738,6 +789,7 @@ If you find a validation issue:
 | 0.1.3 | 246 | ~82% | Added ontology accuracy tests, fixed duplicate MONDO IDs |
 | 0.1.4 | 246 | ~82% | Added fuzz testing infrastructure (5 targets) |
 | 0.1.5 | 246 | ~82% | Added performance benchmarks with criterion (3 suites) |
+| 0.1.6 | 277 | ~83% | Added MIxS 6.0 schema conformance tests (31 tests) |
 
 ---
 
