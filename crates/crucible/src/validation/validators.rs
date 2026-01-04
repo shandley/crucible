@@ -1583,6 +1583,7 @@ impl Validator for DateFormatValidator {
 
 /// Common patterns to check for based on column name or content.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)] // Variants kept for future pattern matching
 enum PatternType {
     /// Email addresses
     Email,

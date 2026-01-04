@@ -94,7 +94,7 @@ pub fn run(
     }
 
     let action_word = if accept { "Accepting" } else { "Rejecting" };
-    let status = if accept {
+    let _status = if accept {
         DecisionStatus::Accepted
     } else {
         DecisionStatus::Rejected

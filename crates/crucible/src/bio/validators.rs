@@ -3,7 +3,7 @@
 //! This module provides validators for biological metadata including
 //! MIxS compliance checking, taxonomy validation, and ontology term mapping.
 
-use crate::bio::accession::{AccessionType, AccessionValidator};
+use crate::bio::accession::AccessionValidator;
 use crate::bio::mixs::{MixsPackage, MixsSchema};
 use crate::bio::ontology::{OntologyType, OntologyValidator};
 use crate::bio::taxonomy::{TaxonomyValidationResult, TaxonomyValidator};

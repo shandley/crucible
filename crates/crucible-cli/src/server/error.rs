@@ -9,6 +9,7 @@ use serde::Serialize;
 
 /// API error type.
 #[derive(Debug)]
+#[allow(dead_code)] // Variants kept for API completeness
 pub enum ApiError {
     /// Resource not found.
     NotFound(String),
