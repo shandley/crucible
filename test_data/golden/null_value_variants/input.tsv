@@ -1,0 +1,9 @@
+sample_id	organism	age	diagnosis	notes
+S001	Homo sapiens	45	IBD	Patient history available
+S002	Homo sapiens	NA	Healthy	None
+S003	Homo sapiens	N/A	Unknown	n/a
+S004	Homo sapiens	null	IBD	NULL
+S005	Homo sapiens	missing	Healthy	Missing
+S006	Homo sapiens		Unknown
+S007	Homo sapiens	not available	IBD	not collected
+S008	Homo sapiens	-	Healthy	-

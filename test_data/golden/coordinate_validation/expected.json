@@ -1,0 +1,338 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T23:41:09.456479Z",
+  "updated_at": "2026-01-04T23:41:09.456479Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "../../test_data/golden/coordinate_validation/input.tsv",
+    "hash": "sha256:7a09a3a7a0a9a0878da4c44646d25ca7972c17eacf3d5683bce1477da4cdfd1b",
+    "size_bytes": 458,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 8,
+    "column_count": 4,
+    "analyzed_at": "2026-01-04T23:41:09.338469Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "biomedical"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "ENV001",
+          "ENV002",
+          "ENV003",
+          "ENV004",
+          "ENV005",
+          "ENV006",
+          "ENV007",
+          "ENV008"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "ENV001",
+              "ENV002",
+              "ENV003",
+              "ENV004",
+              "ENV005",
+              "ENV006",
+              "ENV007",
+              "ENV008"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]{3}\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "ENV001",
+            "ENV002",
+            "ENV003",
+            "ENV004",
+            "ENV005"
+          ],
+          "value_counts": {
+            "ENV001": 1,
+            "ENV002": 1,
+            "ENV003": 1,
+            "ENV004": 1,
+            "ENV005": 1,
+            "ENV006": 1,
+            "ENV007": 1,
+            "ENV008": 1
+          },
+          "string": {
+            "min_length": 6,
+            "max_length": 6,
+            "avg_length": 6.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+      },
+      {
+        "name": "lat_lon",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "38.9072 -77.0369",
+          "37.7749N 122.4194W",
+          "51.5074, -0.1278",
+          "-33.8688 151.2093",
+          "missing",
+          "not collected",
+          "40.7128° N, 74.0060° W",
+          "35.6762 139.6503"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "38.9072 -77.0369",
+              "37.7749N 122.4194W",
+              "51.5074, -0.1278",
+              "-33.8688 151.2093",
+              "missing",
+              "not collected",
+              "40.7128° N, 74.0060° W",
+              "35.6762 139.6503"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "38.9072 -77.0369",
+            "37.7749N 122.4194W",
+            "51.5074, -0.1278",
+            "-33.8688 151.2093",
+            "missing"
+          ],
+          "value_counts": {
+            "38.9072 -77.0369": 1,
+            "37.7749N 122.4194W": 1,
+            "51.5074, -0.1278": 1,
+            "-33.8688 151.2093": 1,
+            "missing": 1,
+            "not collected": 1,
+            "40.7128° N, 74.0060° W": 1,
+            "35.6762 139.6503": 1
+          },
+          "string": {
+            "min_length": 7,
+            "max_length": 24,
+            "avg_length": 15.875
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'lat_lon' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+      },
+      {
+        "name": "geo_loc_name",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "USA: Washington DC",
+          "USA: California",
+          "United Kingdom: London",
+          "Australia: Sydney",
+          "USA: Unknown",
+          "Canada: Ontario",
+          "USA: New York",
+          "Japan: Tokyo"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "USA: Washington DC",
+              "USA: California",
+              "United Kingdom: London",
+              "Australia: Sydney",
+              "USA: Unknown",
+              "Canada: Ontario",
+              "USA: New York",
+              "Japan: Tokyo"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "USA: Washington DC",
+            "USA: California",
+            "United Kingdom: London",
+            "Australia: Sydney",
+            "USA: Unknown"
+          ],
+          "value_counts": {
+            "USA: Washington DC": 1,
+            "USA: California": 1,
+            "United Kingdom: London": 1,
+            "Australia: Sydney": 1,
+            "USA: Unknown": 1,
+            "Canada: Ontario": 1,
+            "USA: New York": 1,
+            "Japan: Tokyo": 1
+          },
+          "string": {
+            "min_length": 12,
+            "max_length": 22,
+            "avg_length": 15.5
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'geo_loc_name' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+      },
+      {
+        "name": "collection_date",
+        "position": 3,
+        "inferred_type": "date",
+        "semantic_type": "continuous",
+        "semantic_role": "metadata",
+        "nullable": false,
+        "unique": true,
+        "constraints": [
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^\\d{4}-\\d{2}-\\d{2}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "2023-05-15",
+            "2023-05-16",
+            "2023-05-17",
+            "2023-05-18",
+            "2023-05-19"
+          ],
+          "value_counts": {
+            "2023-05-15": 1,
+            "2023-05-16": 1,
+            "2023-05-17": 1,
+            "2023-05-18": 1,
+            "2023-05-19": 1,
+            "2023-05-20": 1,
+            "2023-05-21": 1,
+            "2023-05-22": 1
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'collection_date' column appears to be a Metadata in a biomedical context. It contains Date data with 8 unique values."
+      }
+    ]
+  },
+  "observations": [],
+  "suggestions": [],
+  "decisions": [],
+  "summary": {
+    "total_columns": 4,
+    "columns_with_issues": 0,
+    "total_observations": 0,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 0,
+      "info": 0
+    },
+    "observations_by_type": {},
+    "data_quality_score": 1.0,
+    "recommendation": "Data quality is good. Minor issues detected for review.",
+    "total_suggestions": 0,
+    "suggestions_by_status": {
+      "pending": 0,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 0
+  }
+}

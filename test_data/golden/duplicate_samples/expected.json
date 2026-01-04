@@ -1,0 +1,348 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T23:41:09.608646Z",
+  "updated_at": "2026-01-04T23:41:09.608646Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "../../test_data/golden/duplicate_samples/input.tsv",
+    "hash": "sha256:328f443e993087ff828d3c65dec21d02130aa4f02c25b893fafe03371ed0123f",
+    "size_bytes": 302,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 7,
+    "column_count": 5,
+    "analyzed_at": "2026-01-04T23:41:09.485080Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "biomedical"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SAMPLE_001",
+          "SAMPLE_002",
+          "SAMPLE_003",
+          "SAMPLE_004",
+          "SAMPLE_005",
+          "SAMPLE_006",
+          "SAMPLE_007"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SAMPLE_001",
+              "SAMPLE_002",
+              "SAMPLE_003",
+              "SAMPLE_004",
+              "SAMPLE_005",
+              "SAMPLE_006",
+              "SAMPLE_007"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]{6}_\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "SAMPLE_001",
+            "SAMPLE_002",
+            "SAMPLE_003",
+            "SAMPLE_004",
+            "SAMPLE_005"
+          ],
+          "value_counts": {
+            "SAMPLE_001": 1,
+            "SAMPLE_002": 1,
+            "SAMPLE_003": 1,
+            "SAMPLE_004": 1,
+            "SAMPLE_005": 1,
+            "SAMPLE_006": 1,
+            "SAMPLE_007": 1
+          },
+          "string": {
+            "min_length": 10,
+            "max_length": 10,
+            "avg_length": 10.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "organism",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "Homo sapiens"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Homo sapiens"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 1,
+          "sample_values": [
+            "Homo sapiens"
+          ],
+          "value_counts": {
+            "Homo sapiens": 7
+          },
+          "string": {
+            "min_length": 12,
+            "max_length": 12,
+            "avg_length": 12.0
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'organism' column appears to be a Unknown in a biomedical context. It contains String data with 1 unique values."
+      },
+      {
+        "name": "tissue",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "gut",
+          "blood",
+          "liver"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "gut",
+              "blood",
+              "liver"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "gut",
+            "blood",
+            "liver"
+          ],
+          "value_counts": {
+            "gut": 4,
+            "blood": 2,
+            "liver": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 5,
+            "avg_length": 3.857142857142857
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'tissue' column appears to be a Unknown in a biomedical context. It contains String data with 3 unique values."
+      },
+      {
+        "name": "age",
+        "position": 3,
+        "inferred_type": "integer",
+        "semantic_type": "count",
+        "semantic_role": "covariate",
+        "nullable": false,
+        "unique": false,
+        "expected_range": [
+          32.0,
+          58.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": 32.0,
+            "max": 58.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^\\d{2}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "45",
+            "32",
+            "58"
+          ],
+          "value_counts": {
+            "45": 4,
+            "32": 2,
+            "58": 1
+          },
+          "numeric": {
+            "min": 32.0,
+            "max": 58.0,
+            "mean": 43.142857142857146,
+            "std": 8.30539534499922,
+            "median": 45.0,
+            "q1": 32.0,
+            "q3": 45.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'age' column appears to be a Covariate in a biomedical context. It contains Integer data with 3 unique values."
+      },
+      {
+        "name": "diagnosis",
+        "position": 4,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "grouping",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "IBD",
+          "Healthy",
+          "Cancer"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "IBD",
+              "Healthy",
+              "Cancer"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 3,
+          "sample_values": [
+            "IBD",
+            "Healthy",
+            "Cancer"
+          ],
+          "value_counts": {
+            "IBD": 4,
+            "Healthy": 2,
+            "Cancer": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 7,
+            "avg_length": 4.571428571428571
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'diagnosis' column appears to be a Grouping in a biomedical context. It contains String data with 3 unique values."
+      }
+    ]
+  },
+  "observations": [],
+  "suggestions": [],
+  "decisions": [],
+  "summary": {
+    "total_columns": 5,
+    "columns_with_issues": 0,
+    "total_observations": 0,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 0,
+      "info": 0
+    },
+    "observations_by_type": {},
+    "data_quality_score": 1.0,
+    "recommendation": "Data quality is good. Minor issues detected for review.",
+    "total_suggestions": 0,
+    "suggestions_by_status": {
+      "pending": 0,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 0
+  }
+}

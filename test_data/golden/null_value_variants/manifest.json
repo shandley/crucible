@@ -1,0 +1,22 @@
+{
+  "name": "null_value_variants",
+  "description": "Tests detection of inconsistent null value representations",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 3,
+    "types": ["Completeness", "MissingPattern"],
+    "columns_with_issues": ["age", "notes", "diagnosis"]
+  },
+  "expected_suggestions": {
+    "min_count": 3,
+    "actions": ["Flag", "ConvertNa"]
+  },
+  "notes": [
+    "Tests various null representations: NA, N/A, null, NULL, missing, empty, -, not available",
+    "Current detection: completeness issues and 'unknown' pattern in diagnosis",
+    "FUTURE: Should detect inconsistent null value usage within columns",
+    "FUTURE: NCBI prefers specific null terms: 'not collected', 'not applicable', 'missing'"
+  ]
+}

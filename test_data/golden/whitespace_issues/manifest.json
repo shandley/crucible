@@ -1,0 +1,25 @@
+{
+  "name": "whitespace_issues",
+  "description": "Tests detection of leading, trailing, and inconsistent whitespace",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 3,
+    "types": ["ConstraintViolation", "Inconsistency"],
+    "columns_with_issues": ["organism", "tissue", "diagnosis"]
+  },
+  "expected_suggestions": {
+    "min_count": 3,
+    "actions": ["Flag", "Standardize"]
+  },
+  "notes": [
+    "S002: leading space in organism ' Homo sapiens'",
+    "S003: trailing space in organism 'Homo sapiens ', leading space in tissue",
+    "S004: double space in organism 'Homo  sapiens', leading space in diagnosis",
+    "S005: extra spaces around tissue '  blood  '",
+    "S006: leading spaces in diagnosis '  Cancer'",
+    "Current detection: typo detector finds 'Homo  sapiens', set validator flags trimmed values",
+    "FUTURE: Dedicated whitespace validator for comprehensive detection"
+  ]
+}

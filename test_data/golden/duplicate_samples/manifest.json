@@ -1,0 +1,23 @@
+{
+  "name": "duplicate_samples",
+  "description": "Tests detection of duplicate rows and near-duplicates",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 0,
+    "types": [],
+    "columns_with_issues": []
+  },
+  "expected_suggestions": {
+    "min_count": 0,
+    "actions": []
+  },
+  "notes": [
+    "PLACEHOLDER: Duplicate detection not yet implemented",
+    "FUTURE: Should detect exact duplicate rows",
+    "FUTURE: Should detect near-duplicates (same ID, different values)",
+    "FUTURE: Should detect ID reuse with conflicting data",
+    "Test data includes: exact duplicates, near-duplicates, ID conflicts"
+  ]
+}

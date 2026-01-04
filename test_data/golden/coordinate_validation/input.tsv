@@ -1,0 +1,9 @@
+sample_id	lat_lon	geo_loc_name	collection_date
+ENV001	38.9072 -77.0369	USA: Washington DC	2023-05-15
+ENV002	37.7749N 122.4194W	USA: California	2023-05-16
+ENV003	51.5074, -0.1278	United Kingdom: London	2023-05-17
+ENV004	-33.8688 151.2093	Australia: Sydney	2023-05-18
+ENV005	missing	USA: Unknown	2023-05-19
+ENV006	not collected	Canada: Ontario	2023-05-20
+ENV007	40.7128° N, 74.0060° W	USA: New York	2023-05-21
+ENV008	35.6762 139.6503	Japan: Tokyo	2023-05-22

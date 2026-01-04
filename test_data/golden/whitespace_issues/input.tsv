@@ -1,0 +1,8 @@
+sample_id	organism	tissue	diagnosis
+S001	Homo sapiens	gut	IBD
+S002	 Homo sapiens	gut	IBD
+S003	Homo sapiens 	 gut	IBD
+S004	Homo  sapiens	gut	 IBD
+S005	Homo sapiens	  blood  	Healthy
+S006	Homo sapiens	liver	  Cancer
+S007	Homo sapiens	gut	IBD

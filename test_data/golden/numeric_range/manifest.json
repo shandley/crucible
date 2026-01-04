@@ -1,0 +1,23 @@
+{
+  "name": "numeric_range",
+  "description": "Tests detection of impossible or biologically implausible values",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 4,
+    "types": ["Outlier"],
+    "columns_with_issues": ["age", "bmi", "temperature", "ph"]
+  },
+  "expected_suggestions": {
+    "min_count": 4,
+    "actions": ["Flag"]
+  },
+  "notes": [
+    "age: -5 (impossible), 200 (impossible)",
+    "bmi: -2.5 (impossible), 55.0 (extreme but possible)",
+    "temperature: 45.0 (fatal), -10.0 (impossible)",
+    "ph: 14.0 (outside biological range)",
+    "Tests both statistical outliers and domain-impossible values"
+  ]
+}

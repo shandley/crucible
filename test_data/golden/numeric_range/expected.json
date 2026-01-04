@@ -1,0 +1,663 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T23:41:09.827723Z",
+  "updated_at": "2026-01-04T23:41:09.827723Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "../../test_data/golden/numeric_range/input.tsv",
+    "hash": "sha256:a0c113f861c19129e0a392b726ceb3430ce4eae83e6e141abc8e2e131d079ab6",
+    "size_bytes": 228,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 8,
+    "column_count": 5,
+    "analyzed_at": "2026-01-04T23:41:09.791867Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "biomedical"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "PAT001",
+          "PAT002",
+          "PAT003",
+          "PAT004",
+          "PAT005",
+          "PAT006",
+          "PAT007",
+          "PAT008"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "PAT001",
+              "PAT002",
+              "PAT003",
+              "PAT004",
+              "PAT005",
+              "PAT006",
+              "PAT007",
+              "PAT008"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]{3}\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "PAT001",
+            "PAT002",
+            "PAT003",
+            "PAT004",
+            "PAT005"
+          ],
+          "value_counts": {
+            "PAT001": 1,
+            "PAT002": 1,
+            "PAT003": 1,
+            "PAT004": 1,
+            "PAT005": 1,
+            "PAT006": 1,
+            "PAT007": 1,
+            "PAT008": 1
+          },
+          "string": {
+            "min_length": 6,
+            "max_length": 6,
+            "avg_length": 6.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+      },
+      {
+        "name": "age",
+        "position": 1,
+        "inferred_type": "integer",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_range": [
+          -5.0,
+          200.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": -5.0,
+            "max": 200.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "45",
+            "-5",
+            "200",
+            "32",
+            "28"
+          ],
+          "value_counts": {
+            "45": 1,
+            "-5": 1,
+            "200": 1,
+            "32": 1,
+            "28": 1,
+            "55": 1,
+            "42": 1,
+            "38": 1
+          },
+          "numeric": {
+            "min": -5.0,
+            "max": 200.0,
+            "mean": 54.375,
+            "std": 57.4868191414345,
+            "median": 40.0,
+            "q1": 32.0,
+            "q3": 55.0
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'age' column appears to be a Identifier in a biomedical context. It contains Integer data with 8 unique values."
+      },
+      {
+        "name": "bmi",
+        "position": 2,
+        "inferred_type": "float",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_range": [
+          -2.5,
+          55.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": -2.5,
+            "max": 55.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "24.5",
+            "22.1",
+            "28.3",
+            "-2.5",
+            "55.0"
+          ],
+          "value_counts": {
+            "24.5": 1,
+            "22.1": 1,
+            "28.3": 1,
+            "-2.5": 1,
+            "55.0": 1,
+            "24.8": 1,
+            "23.2": 1,
+            "25.1": 1
+          },
+          "numeric": {
+            "min": -2.5,
+            "max": 55.0,
+            "mean": 25.0625,
+            "std": 14.487316651126253,
+            "median": 24.65,
+            "q1": 23.2,
+            "q3": 28.3
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'bmi' column appears to be a Identifier in a biomedical context. It contains Float data with 8 unique values."
+      },
+      {
+        "name": "temperature",
+        "position": 3,
+        "inferred_type": "float",
+        "semantic_type": "continuous",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_range": [
+          -10.0,
+          45.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": -10.0,
+            "max": 45.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 8,
+          "sample_values": [
+            "37.0",
+            "36.8",
+            "38.5",
+            "36.5",
+            "37.2"
+          ],
+          "value_counts": {
+            "37.0": 1,
+            "36.8": 1,
+            "38.5": 1,
+            "36.5": 1,
+            "37.2": 1,
+            "45.0": 1,
+            "36.9": 1,
+            "-10.0": 1
+          },
+          "numeric": {
+            "min": -10.0,
+            "max": 45.0,
+            "mean": 32.2375,
+            "std": 16.17922568450048,
+            "median": 36.95,
+            "q1": 36.8,
+            "q3": 38.5
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'temperature' column appears to be a Identifier in a biomedical context. It contains Float data with 8 unique values."
+      },
+      {
+        "name": "ph",
+        "position": 4,
+        "inferred_type": "float",
+        "semantic_type": "continuous",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_range": [
+          7.2,
+          14.0
+        ],
+        "constraints": [
+          {
+            "type": "range",
+            "min": 7.2,
+            "max": 14.0,
+            "confidence": 0.85
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 8,
+          "null_count": 0,
+          "unique_count": 5,
+          "sample_values": [
+            "7.4",
+            "7.3",
+            "7.5",
+            "7.2",
+            "14.0"
+          ],
+          "value_counts": {
+            "7.4": 3,
+            "7.3": 2,
+            "7.5": 1,
+            "7.2": 1,
+            "14.0": 1
+          },
+          "numeric": {
+            "min": 7.2,
+            "max": 14.0,
+            "mean": 8.1875,
+            "std": 2.1985435519907264,
+            "median": 7.4,
+            "q1": 7.3,
+            "q3": 7.5
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'ph' column appears to be a Unknown in a biomedical context. It contains Float data with 5 unique values."
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_005",
+      "type": "outlier",
+      "severity": "error",
+      "column": "age",
+      "description": "1 impossible negative value(s) in column 'age' (should be non-negative)",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "sample_rows": [
+          1
+        ],
+        "expected": {
+          "min": 0
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T23:41:09.827557Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'age' contains values that fall significantly outside the expected range for this Integer data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    },
+    {
+      "id": "obs_007",
+      "type": "outlier",
+      "severity": "error",
+      "column": "bmi",
+      "description": "1 impossible negative value(s) in column 'bmi' (should be non-negative)",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "sample_rows": [
+          3
+        ],
+        "expected": {
+          "min": 0
+        }
+      },
+      "confidence": 0.95,
+      "detected_at": "2026-01-04T23:41:09.827565Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'bmi' contains values that fall significantly outside the expected range for this Float data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    },
+    {
+      "id": "obs_004",
+      "type": "outlier",
+      "severity": "warning",
+      "column": "age",
+      "description": "2 statistical outlier(s) detected (IQR method): [-5.0, 200.0]",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          1,
+          2
+        ],
+        "expected": {
+          "iqr": 23.0,
+          "lower_bound": -2.5,
+          "q1": 32.0,
+          "q3": 55.0,
+          "upper_bound": 89.5
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.827547Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'age' contains values that fall significantly outside the expected range for this Integer data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    },
+    {
+      "id": "obs_006",
+      "type": "outlier",
+      "severity": "warning",
+      "column": "bmi",
+      "description": "2 statistical outlier(s) detected (IQR method): [-2.5, 55.0]",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          3,
+          4
+        ],
+        "expected": {
+          "iqr": 5.100000000000001,
+          "lower_bound": 15.549999999999997,
+          "q1": 23.2,
+          "q3": 28.3,
+          "upper_bound": 35.95
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.827561Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'bmi' contains values that fall significantly outside the expected range for this Float data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    },
+    {
+      "id": "obs_008",
+      "type": "outlier",
+      "severity": "warning",
+      "column": "temperature",
+      "description": "2 statistical outlier(s) detected (IQR method): [45.0, -10.0]",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 25.0,
+        "sample_rows": [
+          5,
+          7
+        ],
+        "expected": {
+          "iqr": 1.7000000000000028,
+          "lower_bound": 34.24999999999999,
+          "q1": 36.8,
+          "q3": 38.5,
+          "upper_bound": 41.050000000000004
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.827573Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'temperature' contains values that fall significantly outside the expected range for this Float data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    },
+    {
+      "id": "obs_009",
+      "type": "outlier",
+      "severity": "info",
+      "column": "ph",
+      "description": "1 statistical outlier(s) detected (IQR method): [14.0]",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "sample_rows": [
+          6
+        ],
+        "expected": {
+          "iqr": 0.20000000000000018,
+          "lower_bound": 7.0,
+          "q1": 7.3,
+          "q3": 7.5,
+          "upper_bound": 7.800000000000001
+        }
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.827579Z",
+      "detector": "statistical_outlier_validator",
+      "llm_explanation": "The column 'ph' contains values that fall significantly outside the expected range for this Float data. These outliers may represent data entry errors or legitimate edge cases that warrant investigation."
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_007",
+      "observation_id": "obs_005",
+      "action": "flag",
+      "priority": 2,
+      "parameters": {
+        "column": "age",
+        "flag_column": "age_flagged",
+        "flag_value": "invalid_value",
+        "rows": [
+          1
+        ]
+      },
+      "rationale": "In column 'age': Review outlier values for validity. (rows: [1]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 1,
+      "confidence": 0.95,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827702Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_008",
+      "observation_id": "obs_007",
+      "action": "flag",
+      "priority": 2,
+      "parameters": {
+        "column": "bmi",
+        "flag_column": "bmi_flagged",
+        "flag_value": "invalid_value",
+        "rows": [
+          3
+        ]
+      },
+      "rationale": "In column 'bmi': Review outlier values for validity. (rows: [3]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 1,
+      "confidence": 0.95,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827704Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_009",
+      "observation_id": "obs_004",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "age",
+        "flag_column": "age_flagged",
+        "flag_value": "outlier",
+        "rows": [
+          1,
+          2
+        ]
+      },
+      "rationale": "In column 'age': Review outlier values for validity. (rows: [1, 2]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 2,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827706Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_010",
+      "observation_id": "obs_006",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "bmi",
+        "flag_column": "bmi_flagged",
+        "flag_value": "outlier",
+        "rows": [
+          3,
+          4
+        ]
+      },
+      "rationale": "In column 'bmi': Review outlier values for validity. (rows: [3, 4]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 2,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827707Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_011",
+      "observation_id": "obs_008",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "temperature",
+        "flag_column": "temperature_flagged",
+        "flag_value": "outlier",
+        "rows": [
+          5,
+          7
+        ]
+      },
+      "rationale": "In column 'temperature': Review outlier values for validity. (rows: [5, 7]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 2,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827708Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_012",
+      "observation_id": "obs_009",
+      "action": "flag",
+      "priority": 4,
+      "parameters": {
+        "column": "ph",
+        "flag_column": "ph_flagged",
+        "flag_value": "outlier",
+        "rows": [
+          6
+        ]
+      },
+      "rationale": "In column 'ph': Review outlier values for validity. (rows: [6]) These may be data entry errors or valid edge cases.",
+      "affected_rows": 1,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.827710Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 5,
+    "columns_with_issues": 4,
+    "total_observations": 6,
+    "observations_by_severity": {
+      "error": 2,
+      "warning": 3,
+      "info": 1
+    },
+    "observations_by_type": {
+      "outlier": 6
+    },
+    "data_quality_score": 0.0,
+    "recommendation": "Address 2 error-level issues before proceeding with analysis.",
+    "total_suggestions": 6,
+    "suggestions_by_status": {
+      "pending": 6,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 9
+  }
+}

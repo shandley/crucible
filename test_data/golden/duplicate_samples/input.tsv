@@ -1,0 +1,8 @@
+sample_id	organism	tissue	age	diagnosis
+SAMPLE_001	Homo sapiens	gut	45	IBD
+SAMPLE_002	Homo sapiens	gut	45	IBD
+SAMPLE_003	Homo sapiens	blood	32	Healthy
+SAMPLE_004	Homo sapiens	gut	45	IBD
+SAMPLE_005	Homo sapiens	blood	32	Healthy
+SAMPLE_006	Homo sapiens	liver	58	Cancer
+SAMPLE_007	Homo sapiens	gut	45	IBD

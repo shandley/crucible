@@ -1,0 +1,474 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T23:41:10.297749Z",
+  "updated_at": "2026-01-04T23:41:10.297749Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "../../test_data/golden/identifier_patterns/input.tsv",
+    "hash": "sha256:095acbb70d8bf7687d3ac52b3d258942b2dbc960bda4af453ad777db82efa9d1",
+    "size_bytes": 468,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 7,
+    "column_count": 5,
+    "analyzed_at": "2026-01-04T23:41:10.139071Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "biomedical"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SAMPLE001",
+          "SAMPLE002",
+          "SAMPLE003",
+          "SAMPLE004",
+          "SAMPLE005",
+          "SAMPLE006",
+          "SAMPLE007"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SAMPLE001",
+              "SAMPLE002",
+              "SAMPLE003",
+              "SAMPLE004",
+              "SAMPLE005",
+              "SAMPLE006",
+              "SAMPLE007"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]{6}\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "SAMPLE001",
+            "SAMPLE002",
+            "SAMPLE003",
+            "SAMPLE004",
+            "SAMPLE005"
+          ],
+          "value_counts": {
+            "SAMPLE001": 1,
+            "SAMPLE002": 1,
+            "SAMPLE003": 1,
+            "SAMPLE004": 1,
+            "SAMPLE005": 1,
+            "SAMPLE006": 1,
+            "SAMPLE007": 1
+          },
+          "string": {
+            "min_length": 9,
+            "max_length": 9,
+            "avg_length": 9.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "ncbi_accession",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "NC_000001.11",
+          "NC_000002",
+          "NC000003.11",
+          "XC_000004.11",
+          "nc_000005.11",
+          "NC_000006.11",
+          "NC_000007.11"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "NC_000001.11",
+              "NC_000002",
+              "NC000003.11",
+              "XC_000004.11",
+              "nc_000005.11",
+              "NC_000006.11",
+              "NC_000007.11"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "NC_000001.11",
+            "NC_000002",
+            "NC000003.11",
+            "XC_000004.11",
+            "nc_000005.11"
+          ],
+          "value_counts": {
+            "NC_000001.11": 1,
+            "NC_000002": 1,
+            "NC000003.11": 1,
+            "XC_000004.11": 1,
+            "nc_000005.11": 1,
+            "NC_000006.11": 1,
+            "NC_000007.11": 1
+          },
+          "string": {
+            "min_length": 9,
+            "max_length": 12,
+            "avg_length": 11.428571428571429
+          }
+        },
+        "confidence": 0.72,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'ncbi_accession' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "biosample_id",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SAMN12345678",
+          "SAMN12345679",
+          "SAMN1234567X",
+          "SAMN123456789",
+          "samn12345680",
+          "SAMN-12345681",
+          "SAMN12345682"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SAMN12345678",
+              "SAMN12345679",
+              "SAMN1234567X",
+              "SAMN123456789",
+              "samn12345680",
+              "SAMN-12345681",
+              "SAMN12345682"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "SAMN12345678",
+            "SAMN12345679",
+            "SAMN1234567X",
+            "SAMN123456789",
+            "samn12345680"
+          ],
+          "value_counts": {
+            "SAMN12345678": 1,
+            "SAMN12345679": 1,
+            "SAMN1234567X": 1,
+            "SAMN123456789": 1,
+            "samn12345680": 1,
+            "SAMN-12345681": 1,
+            "SAMN12345682": 1
+          },
+          "string": {
+            "min_length": 12,
+            "max_length": 13,
+            "avg_length": 12.285714285714286
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'biosample_id' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "sra_run",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "SRR1234567",
+          "SRR1234568",
+          "SRR123456",
+          "SRRX1234567",
+          "srr1234569",
+          "SRR_1234570",
+          "SRR1234571"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "SRR1234567",
+              "SRR1234568",
+              "SRR123456",
+              "SRRX1234567",
+              "srr1234569",
+              "SRR_1234570",
+              "SRR1234571"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "SRR1234567",
+            "SRR1234568",
+            "SRR123456",
+            "SRRX1234567",
+            "srr1234569"
+          ],
+          "value_counts": {
+            "SRR1234567": 1,
+            "SRR1234568": 1,
+            "SRR123456": 1,
+            "SRRX1234567": 1,
+            "srr1234569": 1,
+            "SRR_1234570": 1,
+            "SRR1234571": 1
+          },
+          "string": {
+            "min_length": 9,
+            "max_length": 11,
+            "avg_length": 10.142857142857142
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sra_run' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "project_id",
+        "position": 4,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "PRJNA123456",
+          "PRJ123456",
+          "PRJNA12345X",
+          "prjna123457",
+          "PRJNA_123458",
+          "PRJNA123459"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "PRJNA123456",
+              "PRJ123456",
+              "PRJNA12345X",
+              "prjna123457",
+              "PRJNA_123458",
+              "PRJNA123459"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 6,
+          "sample_values": [
+            "PRJNA123456",
+            "PRJ123456",
+            "PRJNA12345X",
+            "prjna123457",
+            "PRJNA_123458"
+          ],
+          "value_counts": {
+            "PRJNA123456": 2,
+            "PRJ123456": 1,
+            "PRJNA12345X": 1,
+            "prjna123457": 1,
+            "PRJNA_123458": 1,
+            "PRJNA123459": 1
+          },
+          "string": {
+            "min_length": 9,
+            "max_length": 12,
+            "avg_length": 10.857142857142858
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'project_id' column appears to be a Unknown in a biomedical context. It contains String data with 6 unique values."
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_017",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "project_id",
+      "description": "4 potential typo(s) detected: 'PRJ123456' → 'PRJNA123456', 'PRJNA12345X' → 'PRJNA123456', 'PRJNA_123458' → 'PRJNA123456'",
+      "evidence": {
+        "occurrences": 4,
+        "percentage": 57.14285714285714,
+        "value_counts": {
+          "PRJ123456": {
+            "count": 1,
+            "suggestion": "PRJNA123456"
+          },
+          "PRJNA123459": {
+            "count": 1,
+            "suggestion": "PRJNA123456"
+          },
+          "PRJNA12345X": {
+            "count": 1,
+            "suggestion": "PRJNA123456"
+          },
+          "PRJNA_123458": {
+            "count": 1,
+            "suggestion": "PRJNA123456"
+          }
+        }
+      },
+      "confidence": 0.75,
+      "detected_at": "2026-01-04T23:41:10.297375Z",
+      "detector": "typo_validator",
+      "llm_explanation": "The column 'project_id' has inconsistent value formatting (e.g., mixed case or varying representations of the same concept). This String column should have consistent formatting for reliable analysis."
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_031",
+      "observation_id": "obs_017",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "project_id",
+        "mapping": {
+          "PRJ123456": "PRJNA123456",
+          "PRJNA123459": "PRJNA123456",
+          "PRJNA12345X": "PRJNA123456",
+          "PRJNA_123458": "PRJNA123456"
+        }
+      },
+      "rationale": "In column 'project_id': Review and correct potential typos. 4 potential typo(s) detected: 'PRJ123456' → 'PRJNA123456', 'PRJNA12345X' → 'PRJNA123456', 'PRJNA_123458' → 'PRJNA123456'",
+      "affected_rows": 4,
+      "confidence": 0.75,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:10.297739Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 5,
+    "columns_with_issues": 1,
+    "total_observations": 1,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 1,
+      "info": 0
+    },
+    "observations_by_type": {
+      "inconsistency": 1
+    },
+    "data_quality_score": 0.78,
+    "recommendation": "Data quality is acceptable. Consider addressing warnings.",
+    "total_suggestions": 1,
+    "suggestions_by_status": {
+      "pending": 1,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 4
+  }
+}

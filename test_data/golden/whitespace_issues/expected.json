@@ -1,0 +1,440 @@
+{
+  "crucible_version": "1.0.0",
+  "created_at": "2026-01-04T23:41:09.977835Z",
+  "updated_at": "2026-01-04T23:41:09.977835Z",
+  "source": {
+    "file": "input.tsv",
+    "path": "../../test_data/golden/whitespace_issues/input.tsv",
+    "hash": "sha256:f41ed84b63f4650390ff9bc7d8ca58661137b11447c8265cb599e5fac517b3df",
+    "size_bytes": 240,
+    "format": "tsv",
+    "encoding": "utf-8",
+    "row_count": 7,
+    "column_count": 4,
+    "analyzed_at": "2026-01-04T23:41:09.855781Z"
+  },
+  "context": {
+    "hints": {
+      "domain": "biomedical"
+    },
+    "file_context": {},
+    "inference_config": {
+      "confidence_threshold": 0.8,
+      "llm_enabled": false
+    }
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "sample_id",
+        "position": 0,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "identifier",
+        "nullable": false,
+        "unique": true,
+        "expected_values": [
+          "S001",
+          "S002",
+          "S003",
+          "S004",
+          "S005",
+          "S006",
+          "S007"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "S001",
+              "S002",
+              "S003",
+              "S004",
+              "S005",
+              "S006",
+              "S007"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "unique",
+            "confidence": 0.95
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          },
+          {
+            "type": "pattern",
+            "value": "^[A-Z]\\d{3}$",
+            "confidence": 1.0
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 7,
+          "sample_values": [
+            "S001",
+            "S002",
+            "S003",
+            "S004",
+            "S005"
+          ],
+          "value_counts": {
+            "S001": 1,
+            "S002": 1,
+            "S003": 1,
+            "S004": 1,
+            "S005": 1,
+            "S006": 1,
+            "S007": 1
+          },
+          "string": {
+            "min_length": 4,
+            "max_length": 4,
+            "avg_length": 4.0
+          }
+        },
+        "confidence": 0.97,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+      },
+      {
+        "name": "organism",
+        "position": 1,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "Homo sapiens",
+          " Homo sapiens",
+          "Homo sapiens ",
+          "Homo  sapiens"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "Homo sapiens",
+              " Homo sapiens",
+              "Homo sapiens ",
+              "Homo  sapiens"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "Homo sapiens",
+            " Homo sapiens",
+            "Homo sapiens ",
+            "Homo  sapiens"
+          ],
+          "value_counts": {
+            "Homo sapiens": 4,
+            " Homo sapiens": 1,
+            "Homo sapiens ": 1,
+            "Homo  sapiens": 1
+          },
+          "string": {
+            "min_length": 12,
+            "max_length": 13,
+            "avg_length": 12.428571428571429
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'organism' column appears to be a Unknown in a biomedical context. It contains String data with 4 unique values."
+      },
+      {
+        "name": "tissue",
+        "position": 2,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "unknown",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "gut",
+          " gut",
+          "  blood  ",
+          "liver"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "gut",
+              " gut",
+              "  blood  ",
+              "liver"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "gut",
+            " gut",
+            "  blood  ",
+            "liver"
+          ],
+          "value_counts": {
+            "gut": 4,
+            " gut": 1,
+            "  blood  ": 1,
+            "liver": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 9,
+            "avg_length": 4.285714285714286
+          }
+        },
+        "confidence": 0.6,
+        "inference_sources": [
+          "statistical"
+        ],
+        "llm_insight": "The 'tissue' column appears to be a Unknown in a biomedical context. It contains String data with 4 unique values."
+      },
+      {
+        "name": "diagnosis",
+        "position": 3,
+        "inferred_type": "string",
+        "semantic_type": "categorical",
+        "semantic_role": "grouping",
+        "nullable": false,
+        "unique": false,
+        "expected_values": [
+          "IBD",
+          " IBD",
+          "Healthy",
+          "  Cancer"
+        ],
+        "constraints": [
+          {
+            "type": "set_membership",
+            "values": [
+              "IBD",
+              " IBD",
+              "Healthy",
+              "  Cancer"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "type": "not_null",
+            "confidence": 0.9
+          }
+        ],
+        "statistics": {
+          "count": 7,
+          "null_count": 0,
+          "unique_count": 4,
+          "sample_values": [
+            "IBD",
+            " IBD",
+            "Healthy",
+            "  Cancer"
+          ],
+          "value_counts": {
+            "IBD": 4,
+            " IBD": 1,
+            "Healthy": 1,
+            "  Cancer": 1
+          },
+          "string": {
+            "min_length": 3,
+            "max_length": 8,
+            "avg_length": 4.428571428571429
+          }
+        },
+        "confidence": 0.77,
+        "inference_sources": [
+          "statistical",
+          "semantic"
+        ],
+        "llm_insight": "The 'diagnosis' column appears to be a Grouping in a biomedical context. It contains String data with 4 unique values."
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_010",
+      "type": "constraint_violation",
+      "severity": "warning",
+      "column": "tissue",
+      "description": "1 values not in expected set: [\"blood\"]",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 14.285714285714285,
+        "sample_rows": [
+          4
+        ],
+        "expected": [
+          "gut",
+          " gut",
+          "  blood  ",
+          "liver"
+        ]
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.977528Z",
+      "detector": "set_validator",
+      "llm_explanation": "The column 'tissue' has a ConstraintViolation issue that may affect data quality. Review the evidence to determine the appropriate action."
+    },
+    {
+      "id": "obs_011",
+      "type": "constraint_violation",
+      "severity": "warning",
+      "column": "diagnosis",
+      "description": "1 values not in expected set: [\"Cancer\"]",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 14.285714285714285,
+        "sample_rows": [
+          5
+        ],
+        "expected": [
+          "IBD",
+          " IBD",
+          "Healthy",
+          "  Cancer"
+        ]
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-04T23:41:09.977536Z",
+      "detector": "set_validator",
+      "llm_explanation": "The column 'diagnosis' has a ConstraintViolation issue that may affect data quality. Review the evidence to determine the appropriate action."
+    },
+    {
+      "id": "obs_012",
+      "type": "inconsistency",
+      "severity": "warning",
+      "column": "organism",
+      "description": "1 potential typo(s) detected: 'Homo  sapiens' → 'Homo sapiens'",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 14.285714285714285,
+        "value_counts": {
+          "Homo  sapiens": {
+            "count": 1,
+            "suggestion": "Homo sapiens"
+          }
+        }
+      },
+      "confidence": 0.75,
+      "detected_at": "2026-01-04T23:41:09.977632Z",
+      "detector": "typo_validator",
+      "llm_explanation": "The column 'organism' has inconsistent value formatting (e.g., mixed case or varying representations of the same concept). This String column should have consistent formatting for reliable analysis."
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_019",
+      "observation_id": "obs_010",
+      "action": "flag",
+      "priority": 2,
+      "parameters": {
+        "column": "tissue",
+        "flag_column": "tissue_constraint_violation",
+        "flag_value": "constraint_violation",
+        "rows": [
+          4
+        ]
+      },
+      "rationale": "Flag 1 value(s) violating constraints in column 'tissue' for review.",
+      "affected_rows": 1,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.977814Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_020",
+      "observation_id": "obs_011",
+      "action": "flag",
+      "priority": 2,
+      "parameters": {
+        "column": "diagnosis",
+        "flag_column": "diagnosis_constraint_violation",
+        "flag_value": "constraint_violation",
+        "rows": [
+          5
+        ]
+      },
+      "rationale": "Flag 1 value(s) violating constraints in column 'diagnosis' for review.",
+      "affected_rows": 1,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.977816Z",
+      "suggester": "rule_engine"
+    },
+    {
+      "id": "sug_021",
+      "observation_id": "obs_012",
+      "action": "standardize",
+      "priority": 2,
+      "parameters": {
+        "column": "organism",
+        "mapping": {
+          "Homo  sapiens": "Homo sapiens"
+        }
+      },
+      "rationale": "In column 'organism': Review and correct potential typos. 1 potential typo(s) detected: 'Homo  sapiens' → 'Homo sapiens'",
+      "affected_rows": 1,
+      "confidence": 0.75,
+      "reversible": true,
+      "suggested_at": "2026-01-04T23:41:09.977826Z",
+      "suggester": "rule_engine"
+    }
+  ],
+  "decisions": [],
+  "summary": {
+    "total_columns": 4,
+    "columns_with_issues": 3,
+    "total_observations": 3,
+    "observations_by_severity": {
+      "error": 0,
+      "warning": 3,
+      "info": 0
+    },
+    "observations_by_type": {
+      "constraintviolation": 2,
+      "inconsistency": 1
+    },
+    "data_quality_score": 0.19,
+    "recommendation": "Data quality needs attention. Review all observations.",
+    "total_suggestions": 3,
+    "suggestions_by_status": {
+      "pending": 3,
+      "accepted": 0,
+      "modified": 0,
+      "rejected": 0,
+      "applied": 0
+    },
+    "total_affected_rows": 3
+  }
+}

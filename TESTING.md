@@ -69,18 +69,25 @@ crates/crucible/tests/
 cargo test -p crucible --test integration_test
 ```
 
-### 3. Golden File Tests (7 tests)
+### 3. Golden File Tests (14 tests)
 
 Golden file tests ensure deterministic output by comparing analysis results against reference files.
 
 ```
 test_data/golden/
-├── case_consistency/     # Case variant detection
-├── date_formats/         # Date format normalization
-├── taxonomy_validation/  # NCBI taxonomy checking
-├── accession_formats/    # Database accession validation
-├── outlier_detection/    # Statistical outlier flagging
-└── mixs_compliance/      # MIxS standard compliance
+├── case_consistency/        # Case variant detection
+├── date_formats/            # Date format normalization
+├── taxonomy_validation/     # NCBI taxonomy checking (bio feature)
+├── accession_formats/       # Database accession validation (bio feature)
+├── outlier_detection/       # Statistical outlier flagging
+├── mixs_compliance/         # MIxS standard compliance (bio feature)
+├── null_value_variants/     # Inconsistent null representations
+├── numeric_range/           # Out-of-range value detection
+├── whitespace_issues/       # Leading/trailing whitespace
+├── empty_values/            # Empty cell detection
+├── coordinate_validation/   # Geographic coordinate formats (placeholder)
+├── duplicate_samples/       # Duplicate row detection (placeholder)
+└── identifier_patterns/     # NCBI identifier format validation
 ```
 
 Each test case contains:
@@ -633,14 +640,21 @@ cargo tarpaulin --out Html
 
 ### Golden Test Cases
 
-| Test Case | Issues | Observations | Suggestions |
-|-----------|--------|--------------|-------------|
-| case_consistency | Case variants | 9 | 9 |
-| date_formats | Mixed dates | 3 | 3 |
-| outlier_detection | Impossible values | 9 | 9 |
-| taxonomy_validation | Abbreviations, typos | 1+ | 1+ |
-| accession_formats | Invalid accessions | 3 | 1 |
-| mixs_compliance | Missing fields | 20 | 3 |
+| Test Case | Issues | Observations | Suggestions | Status |
+|-----------|--------|--------------|-------------|--------|
+| case_consistency | Case variants | 9 | 9 | Active |
+| date_formats | Mixed dates | 3 | 3 | Active |
+| outlier_detection | Impossible values | 9 | 9 | Active |
+| taxonomy_validation | Abbreviations, typos | 1+ | 1+ | Bio feature |
+| accession_formats | Invalid accessions | 3 | 1 | Bio feature |
+| mixs_compliance | Missing fields | 20 | 3 | Bio feature |
+| null_value_variants | Null representations | 3 | 3 | Active |
+| numeric_range | Out-of-range values | 6 | 6 | Active |
+| whitespace_issues | Whitespace | 3 | 3 | Active |
+| empty_values | Empty cells | 4 | 4 | Active |
+| coordinate_validation | Coordinate formats | 0 | 0 | Placeholder |
+| duplicate_samples | Duplicate rows | 0 | 0 | Placeholder |
+| identifier_patterns | NCBI identifier formats | 1 | 1 | Active |
 
 ---
 
@@ -731,7 +745,7 @@ test:
 |--------|---------|--------|
 | Unit tests | 104 | 150+ |
 | Integration tests | 32 | 50+ |
-| Golden tests | 7 | 15+ |
+| Golden tests | 14 | 20+ |
 | Property tests | 32 | 50+ |
 | Real-world validation | 14 | 25+ |
 | Ontology accuracy | 18 | 30+ |
@@ -739,7 +753,7 @@ test:
 | Benchmark suites | 3 | 5+ |
 | MIxS conformance | 31 | 40+ |
 | Doc tests | 9 | 20+ |
-| **Total tests** | **277** | **450+** |
+| **Total tests** | **284** | **450+** |
 | Code coverage | ~75% | 85%+ |
 | Bio module coverage | ~90% | 95%+ |
 
@@ -790,6 +804,7 @@ If you find a validation issue:
 | 0.1.4 | 246 | ~82% | Added fuzz testing infrastructure (5 targets) |
 | 0.1.5 | 246 | ~82% | Added performance benchmarks with criterion (3 suites) |
 | 0.1.6 | 277 | ~83% | Added MIxS 6.0 schema conformance tests (31 tests) |
+| 0.1.7 | 284 | ~84% | Expanded golden tests (7 new: null values, numeric range, whitespace, empty, coordinates, duplicates, identifiers) |
 
 ---
 

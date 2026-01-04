@@ -207,6 +207,15 @@ macro_rules! golden_test {
 golden_test!(test_golden_case_consistency, "case_consistency");
 golden_test!(test_golden_date_formats, "date_formats");
 golden_test!(test_golden_outlier_detection, "outlier_detection");
+golden_test!(test_golden_null_value_variants, "null_value_variants");
+golden_test!(test_golden_numeric_range, "numeric_range");
+golden_test!(test_golden_whitespace_issues, "whitespace_issues");
+golden_test!(test_golden_empty_values, "empty_values");
+
+// Tests that require specific validators (infrastructure in place, detectors pending)
+golden_test!(test_golden_coordinate_validation, "coordinate_validation");
+golden_test!(test_golden_duplicate_samples, "duplicate_samples");
+golden_test!(test_golden_identifier_patterns, "identifier_patterns");
 
 // Tests that require bio module features
 #[cfg(feature = "bio")]

@@ -1,0 +1,23 @@
+{
+  "name": "coordinate_validation",
+  "description": "Tests validation of geographic coordinate formats",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "environmental",
+  "expected_observations": {
+    "min_count": 0,
+    "types": [],
+    "columns_with_issues": []
+  },
+  "expected_suggestions": {
+    "min_count": 0,
+    "actions": []
+  },
+  "notes": [
+    "PLACEHOLDER: Coordinate validation not yet implemented",
+    "FUTURE: Should detect invalid lat/lon ranges (>90, >180)",
+    "FUTURE: Should detect coordinate format inconsistencies (DMS vs DD)",
+    "FUTURE: Should validate MIxS lat_lon format requirements",
+    "Test data includes: out-of-range coords, DMS format, reversed lat/lon, ocean coords"
+  ]
+}

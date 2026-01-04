@@ -1,0 +1,8 @@
+sample_id	organism	collection_date	host_tissue	notes
+EMP001	Homo sapiens	2024-01-15	gut	Normal sample
+EMP002		2024-01-16	blood	Missing organism
+EMP003	Homo sapiens		liver	Missing date
+EMP004	Homo sapiens	2024-01-18		Missing tissue
+EMP005	Homo sapiens	2024-01-19	spleen
+EMP006					All fields empty except ID
+EMP007	Homo sapiens	2024-01-21	kidney	Complete record

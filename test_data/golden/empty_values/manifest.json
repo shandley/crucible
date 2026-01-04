@@ -1,0 +1,25 @@
+{
+  "name": "empty_values",
+  "description": "Tests detection of truly empty cells vs intentional blanks",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 4,
+    "types": ["Completeness"],
+    "columns_with_issues": ["organism", "collection_date", "host_tissue", "notes"]
+  },
+  "expected_suggestions": {
+    "min_count": 4,
+    "actions": ["Flag"]
+  },
+  "notes": [
+    "EMP002: empty organism field (critical for biomedical)",
+    "EMP003: empty collection_date field",
+    "EMP004: empty host_tissue field",
+    "EMP005: empty notes field",
+    "EMP006: multiple empty fields in same row",
+    "Current detection: completeness validator flags all empty columns",
+    "FUTURE: Should distinguish mandatory vs optional empty fields"
+  ]
+}

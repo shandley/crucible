@@ -1,0 +1,25 @@
+{
+  "name": "identifier_patterns",
+  "description": "Tests validation of NCBI-style identifier formats",
+  "version": "1.0.0",
+  "created": "2026-01-04",
+  "domain": "biomedical",
+  "expected_observations": {
+    "min_count": 1,
+    "types": ["Inconsistency"],
+    "columns_with_issues": ["project_id"]
+  },
+  "expected_suggestions": {
+    "min_count": 1,
+    "actions": ["Standardize"]
+  },
+  "notes": [
+    "SAMPLE002: accession missing version (.11)",
+    "SAMPLE003: accession missing underscore, biosample has invalid char X, SRA too short",
+    "SAMPLE004: wrong accession prefix XC, biosample too long, SRA has letter, project has X",
+    "SAMPLE005: lowercase identifiers (may be valid but inconsistent)",
+    "SAMPLE006: hyphens and underscores in wrong places",
+    "Current detection: typo validator detects project_id inconsistencies",
+    "FUTURE: NCBI identifier pattern validation: NC_######.##, SAMN########, SRR#######, PRJNA######"
+  ]
+}
