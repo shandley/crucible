@@ -1,194 +1,372 @@
 # Crucible
 
-**LLM-native data curation for the modern era.**
+**Intelligent data curation for tabular datasets.**
 
-Crucible is a Rust library (with Python bindings) that brings intelligent, non-destructive data curation to tabular datasets. Unlike traditional validation tools where humans write rules, Crucible infers what the rules *should be* from context, then suggests curations with full provenance tracking.
+Crucible analyzes your CSV/TSV files, detects data quality issues, and suggests fixes—all without modifying your original data. An AI-powered curation layer tracks every observation, suggestion, and decision with full provenance.
 
-## The Problem
+## What Crucible Does
 
-Metadata curation is a massive pain point for researchers:
-- Inconsistent formats ("NA", "N/A", "missing", "" all meaning the same thing)
-- Case variations ("Control", "control", "CONTROL")
-- Embedded special characters breaking parsers
-- Type mismatches (numbers stored as strings)
-- No provenance when changes are made
+- **Detects issues**: Missing values, outliers, inconsistent formatting, case variations, type mismatches
+- **Suggests fixes**: Standardize values, fill missing data, flag anomalies for review
+- **Tracks everything**: Every change is recorded with who made it and why
+- **Preserves originals**: Your source data is never modified; curations are stored separately
 
-Traditional tools like `pointblank` or `janitor` require humans to specify validation rules. But an LLM trained on millions of datasets already *knows* what a "diagnosis" column should contain, what reasonable age ranges look like, and how to standardize categorical variables.
+## Installation
 
-## The Solution
+### Prerequisites
 
-Crucible takes an **intent-driven** approach:
+- **Rust** (1.70 or later): Install from [rustup.rs](https://rustup.rs/)
+- **Node.js** (18 or later): Required for building the web UI
 
-```
-Traditional:
-  Human writes: col_vals_between(age, 0, 100)
-  System checks against that rule
-
-Crucible:
-  AI observes: column "age" in study titled "Pediatric IBD Cohort"
-  AI infers: ages should be 0-18 (pediatric)
-  AI notices: Sample X has age=45
-  AI suggests: "Sample X appears adult in pediatric cohort - verify?"
-```
-
-## Core Principles
-
-1. **Non-destructive**: Original data is never modified. A curation layer sits alongside.
-2. **Provenance**: Every observation, suggestion, and decision is tracked.
-3. **LLM-native**: Leverages LLM knowledge for inference and explanation.
-4. **Multi-modal inference**: Combines statistical, semantic, contextual, and LLM sources.
-5. **User control**: AI suggests, humans decide. Configurable confidence thresholds.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CRUCIBLE                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  Inference Engine                                               │
-│  ├── Statistical: distributions, types, outliers, correlations │
-│  ├── Semantic: column names, value patterns, format hints      │
-│  ├── Contextual: file metadata, user-provided hints            │
-│  └── LLM: domain knowledge, pattern recognition, explanation   │
-├─────────────────────────────────────────────────────────────────┤
-│  Schema Model                                                   │
-│  ├── Inferred column types and semantics                       │
-│  ├── Expected values, ranges, constraints                      │
-│  └── Cross-column relationships                                │
-├─────────────────────────────────────────────────────────────────┤
-│  Curation Layer                                                 │
-│  ├── Observations (issues detected)                            │
-│  ├── Suggestions (proposed fixes)                              │
-│  └── Decisions (accepted/rejected, with provenance)            │
-├─────────────────────────────────────────────────────────────────┤
-│  Application                                                    │
-│  ├── Non-destructive: curated view without modifying source    │
-│  └── Export: generate cleaned dataset with full audit trail    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Usage
-
-### Rust (Phase 1 - Available Now)
-
-```rust
-use crucible::Crucible;
-
-// Create analyzer
-let crucible = Crucible::new();
-
-// Analyze a CSV/TSV file
-let result = crucible.analyze("metadata.tsv")?;
-
-// View inferred schema
-for col in &result.schema.columns {
-    println!("{}: {:?} ({:?})",
-        col.name,
-        col.inferred_type,
-        col.semantic_role);
-}
-
-// View detected issues
-for obs in &result.observations {
-    println!("[{:?}] {}: {}",
-        obs.severity,
-        obs.column,
-        obs.description);
-}
-
-// Check data quality score
-println!("Quality: {:.0}%", result.summary.data_quality_score * 100.0);
-println!("Recommendation: {}", result.summary.recommendation);
-
-// Serialize to JSON
-let json = serde_json::to_string_pretty(&result)?;
-```
-
-### Core Features
-
-- **Type Inference**: Integer, Float, String, Boolean, Date, DateTime
-- **Semantic Role Detection**: Identifier, Grouping, Covariate, Outcome, Metadata
-- **Delimiter Detection**: Auto-detect CSV, TSV, semicolon, pipe
-- **Missing Value Detection**: NA, N/A, null, empty, and custom patterns
-- **Outlier Detection**: IQR and z-score methods
-- **Consistency Checks**: Boolean format, case variations, typos
-- **Date Format Standardization**: ISO 8601 conversion
-- **LLM-Enhanced Analysis**: Anthropic, OpenAI, Ollama support
-- **Data Quality Scoring**: Automated assessment with recommendations
-
-### Coming Next
-
-**Phase 5**: Python bindings (PyO3, pip package)
-**Phase 6**: Polish (documentation, benchmarks, streaming)
-
-### CLI
+### From Source
 
 ```bash
-# Analyze and generate curation layer
-crucible analyze metadata.tsv
-# Creates metadata.curation.json
+# Clone the repository
+git clone https://github.com/shandley/crucible.git
+cd crucible
 
-# Analyze with LLM enhancement
-crucible analyze metadata.tsv --llm anthropic
+# Build and install
+cargo install --path crates/crucible-cli
 
-# Interactive web review (opens browser)
-crucible review metadata.tsv
-# Opens http://localhost:3141 with React UI
-
-# Check curation progress
-crucible status metadata.curation.json
-
-# Preview changes before applying
-crucible diff metadata.curation.json
-
-# Batch accept/reject by type or column
-crucible batch metadata.curation.json --accept --action-type standardize
-crucible batch metadata.curation.json --reject --column diagnosis
-
-# Apply and export curated data
-crucible apply metadata.curation.json -o curated.tsv --format tsv
-
-# Export formats: tsv, csv, json, parquet (with --features parquet)
-crucible apply metadata.curation.json -o curated.json --format json
+# Verify installation
+crucible --help
 ```
 
-### Web UI Features
+### Optional: Enable Parquet Support
 
-The interactive review UI (`crucible review`) provides:
-- **Suggestion cards** with accept/reject/modify buttons
-- **Data preview** with affected row highlighting
-- **Column-based grouping** with collapsible sections
-- **Keyboard navigation** (j/k, Enter, Escape, Ctrl+Z)
-- **Batch operations** (Accept All, Reject All per column)
-- **Auto-save** with progress indicator
+```bash
+cargo install --path crates/crucible-cli --features parquet
+```
 
-## Integration
+## Quick Start
 
-Crucible is designed to be domain-agnostic. Domain-specific wrappers add context:
+```bash
+# Analyze a data file
+crucible analyze data.tsv
 
-- **biostack-curate**: Adds biological/bioinformatics knowledge
-- Future: financial data, clinical data, etc.
+# Open the interactive web UI to review suggestions
+crucible review data.tsv
 
-## Status
+# Apply accepted changes and export
+crucible apply data.curation.json -o curated.tsv
+```
 
-**Phase 4 Complete.** Full CLI with web UI for interactive curation.
+## Usage Guide
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1 | **Complete** | Foundation: type inference, schema detection, validation |
-| Phase 2 | **Complete** | LLM integration (Anthropic, OpenAI, Ollama) |
-| Phase 3 | **Complete** | Curation layer with persistence |
-| Phase 4 | **Complete** | CLI + Web UI + export functionality |
-| Phase 5 | Next | Python bindings |
-| Phase 6 | Planned | Polish and optimization |
+### Analyzing Data
 
-See planning documents:
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Technical architecture
-- [DESIGN.md](./DESIGN.md) - Design decisions and rationale
-- [CURATION_LAYER_SPEC.md](./CURATION_LAYER_SPEC.md) - JSON schema specification
-- [ROADMAP.md](./ROADMAP.md) - Development phases
-- [INTEGRATION.md](./INTEGRATION.md) - BioStack integration
+The `analyze` command scans your data and creates a curation file with detected issues and suggested fixes:
+
+```bash
+crucible analyze data.tsv
+```
+
+This creates `data.curation.json` containing:
+- Inferred schema (column types, semantic roles)
+- Observations (detected issues)
+- Suggestions (proposed fixes)
+- Data quality score
+
+**Options:**
+
+```bash
+# Specify output file
+crucible analyze data.tsv --output my-curation.json
+
+# Provide domain context for better suggestions
+crucible analyze data.tsv --domain biomedical
+
+# Skip LLM enhancement (faster, works offline)
+crucible analyze data.tsv --no-llm
+```
+
+### Interactive Review (Web UI)
+
+The `review` command starts a local web server with an interactive UI:
+
+```bash
+crucible review data.tsv
+```
+
+This opens your browser to `http://localhost:3141` where you can:
+
+- **Review suggestions** one by one with Accept/Reject/Modify buttons
+- **See affected data** with highlighted rows showing what will change
+- **Use keyboard shortcuts** for faster review:
+  - `j`/`k` - Navigate between suggestions
+  - `a` - Accept current suggestion
+  - `r` - Reject current suggestion
+  - `Enter` - Expand/collapse suggestion details
+  - `Ctrl+Z` - Undo last decision
+- **Batch operations** - Accept or reject all suggestions for a column
+- **Ask AI questions** about observations (requires API key)
+
+**Options:**
+
+```bash
+# Use a different port
+crucible review data.tsv --port 8080
+
+# Don't auto-open browser
+crucible review data.tsv --no-open
+
+# Review an existing curation file
+crucible review data.tsv --curation existing.curation.json
+```
+
+### Checking Progress
+
+View curation progress without opening the web UI:
+
+```bash
+crucible status data.curation.json
+```
+
+Output:
+```
+Curation Status: data.curation.json
+
+Progress: 15/22 suggestions reviewed (68%)
+  Accepted: 12
+  Rejected: 2
+  Modified: 1
+  Pending:  7
+
+Data Quality: 85% (Good)
+```
+
+**Options:**
+
+```bash
+# JSON output for scripting
+crucible status data.curation.json --json
+```
+
+### Previewing Changes
+
+See what changes would be applied before committing:
+
+```bash
+crucible diff data.curation.json
+```
+
+Output:
+```
+Changes to be applied (12 accepted suggestions):
+
+Column: diagnosis
+  Row 5: "Crohn's" → "CD" (standardize)
+  Row 12: "cd" → "CD" (standardize)
+
+Column: age
+  Row 8: "" → "NA" (fill missing)
+
+Column: bmi
+  Row 15: Flagged as outlier (value: -5.2)
+```
+
+**Options:**
+
+```bash
+# Show more context lines
+crucible diff data.curation.json --context 5
+```
+
+### Applying Changes
+
+Export curated data with accepted changes applied:
+
+```bash
+crucible apply data.curation.json -o curated.tsv
+```
+
+**Supported formats:**
+
+```bash
+# Tab-separated (default)
+crucible apply data.curation.json -o curated.tsv --format tsv
+
+# Comma-separated
+crucible apply data.curation.json -o curated.csv --format csv
+
+# JSON (array of objects)
+crucible apply data.curation.json -o curated.json --format json
+
+# Parquet (requires --features parquet)
+crucible apply data.curation.json -o curated.parquet --format parquet
+```
+
+### Batch Operations
+
+Accept or reject multiple suggestions at once:
+
+```bash
+# Accept all standardization suggestions
+crucible batch data.curation.json --accept --action-type standardize
+
+# Reject all suggestions for a specific column
+crucible batch data.curation.json --reject --column diagnosis
+
+# Accept all remaining pending suggestions
+crucible batch data.curation.json --accept --all
+```
+
+## AI Features
+
+Crucible can use AI to enhance analysis and provide interactive explanations.
+
+### Setting Up AI
+
+Set one of these environment variables:
+
+```bash
+# Anthropic Claude (recommended)
+export ANTHROPIC_API_KEY="your-api-key"
+
+# OpenAI
+export OPENAI_API_KEY="your-api-key"
+
+# Local Ollama (no API key needed)
+# Just ensure Ollama is running: ollama serve
+```
+
+### What AI Enables
+
+When an API key is configured:
+
+1. **Enhanced Analysis**: Better detection of domain-specific issues
+2. **Ask Questions**: Click "Ask" on any observation to get AI explanations
+3. **Confidence Calibration**: AI adjusts confidence scores based on context
+
+The web UI shows AI status in the header. The "Ask" button only appears when AI is available.
+
+### Running Without AI
+
+Crucible works fully offline without any API keys. AI features are simply disabled:
+
+```bash
+# Explicitly skip AI during analysis
+crucible analyze data.tsv --no-llm
+```
+
+## Examples
+
+### Biomedical Metadata
+
+```bash
+# Analyze with biomedical domain context
+crucible analyze patient_metadata.tsv --domain biomedical
+
+# Review interactively
+crucible review patient_metadata.tsv
+
+# After review, export cleaned data
+crucible apply patient_metadata.curation.json -o cleaned_metadata.tsv
+```
+
+### Quick Validation
+
+```bash
+# Just check data quality score
+crucible analyze data.csv
+crucible status data.curation.json --json | jq '.quality_score'
+```
+
+### CI/CD Integration
+
+```bash
+# Fail if data quality is below threshold
+SCORE=$(crucible status data.curation.json --json | jq '.quality_score')
+if (( $(echo "$SCORE < 0.8" | bc -l) )); then
+  echo "Data quality too low: $SCORE"
+  exit 1
+fi
+```
+
+## File Formats
+
+### Input
+
+Crucible automatically detects:
+- **TSV** (tab-separated)
+- **CSV** (comma-separated)
+- **Semicolon-separated**
+- **Pipe-separated**
+
+### Curation Layer
+
+The `.curation.json` file stores all analysis results and decisions:
+
+```json
+{
+  "version": "1.0.0",
+  "source_file": "data.tsv",
+  "schema": { ... },
+  "observations": [ ... ],
+  "suggestions": [ ... ],
+  "decisions": [ ... ],
+  "summary": {
+    "data_quality_score": 0.85,
+    "recommendation": "Good quality with minor issues"
+  }
+}
+```
+
+This file can be:
+- Version controlled alongside your data
+- Shared with collaborators
+- Used to reproduce exact curation decisions
+
+## Troubleshooting
+
+### "Command not found: crucible"
+
+Ensure `~/.cargo/bin` is in your PATH:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+### Web UI won't open
+
+Try specifying a different port:
+
+```bash
+crucible review data.tsv --port 8080 --no-open
+# Then manually open http://localhost:8080
+```
+
+### AI features not working
+
+Check that your API key is set:
+
+```bash
+echo $ANTHROPIC_API_KEY  # Should show your key
+```
+
+The web UI header shows "AI: Enabled" or "AI: Disabled" to confirm status.
+
+### Large files are slow
+
+For files over 100MB, consider:
+
+```bash
+# Skip AI enhancement for faster analysis
+crucible analyze large_data.tsv --no-llm
+```
+
+## Getting Help
+
+```bash
+# General help
+crucible --help
+
+# Command-specific help
+crucible analyze --help
+crucible review --help
+crucible apply --help
+```
 
 ## License
 
-TBD
+MIT License - see [LICENSE](./LICENSE) for details.
