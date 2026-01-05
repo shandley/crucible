@@ -81,7 +81,7 @@ pub async fn ask_question(
     Json(request): Json<AskQuestionRequest>,
 ) -> Result<Json<AskQuestionResponse>, ApiError> {
     // Require LLM provider
-    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+    let provider = state.llm_provider.clone().ok_or_else(|| {
         ApiError::BadRequest(
             "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
                 .to_string(),
@@ -122,9 +122,13 @@ pub async fn ask_question(
             .unwrap_or("general"),
     );
 
-    let response = provider
-        .answer_question(&context, &hints)
-        .map_err(|e| ApiError::Internal(e.to_string()))?;
+    // Run blocking LLM call in a separate thread
+    let response = tokio::task::spawn_blocking(move || {
+        provider.answer_question(&context, &hints)
+    })
+    .await
+    .map_err(|e| ApiError::Internal(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     Ok(Json(AskQuestionResponse {
         answer: response.answer,
@@ -139,7 +143,7 @@ pub async fn calibrate_confidence(
     Json(request): Json<CalibrateConfidenceRequest>,
 ) -> Result<Json<CalibrateConfidenceResponse>, ApiError> {
     // Require LLM provider
-    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+    let provider = state.llm_provider.clone().ok_or_else(|| {
         ApiError::BadRequest(
             "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
                 .to_string(),
@@ -153,14 +157,16 @@ pub async fn calibrate_confidence(
         .observations
         .iter()
         .find(|o| o.id == request.observation_id)
-        .ok_or_else(|| ApiError::NotFound(format!("Observation {} not found", request.observation_id)))?;
+        .ok_or_else(|| ApiError::NotFound(format!("Observation {} not found", request.observation_id)))?
+        .clone();
 
     // Find the column schema
     let column = curation
         .schema
         .columns
         .iter()
-        .find(|c| c.name == observation.column);
+        .find(|c| c.name == observation.column)
+        .cloned();
 
     // Get domain from curation context
     let hints = ContextHints::new().with_domain(
@@ -172,12 +178,18 @@ pub async fn calibrate_confidence(
             .unwrap_or("general"),
     );
 
-    let calibration = provider
-        .calibrate_confidence(observation, column, &hints)
-        .map_err(|e| ApiError::Internal(e.to_string()))?;
+    let obs_id = request.observation_id.clone();
+
+    // Run blocking LLM call in a separate thread
+    let calibration = tokio::task::spawn_blocking(move || {
+        provider.calibrate_confidence(&observation, column.as_ref(), &hints)
+    })
+    .await
+    .map_err(|e| ApiError::Internal(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     Ok(Json(CalibrateConfidenceResponse {
-        observation_id: request.observation_id,
+        observation_id: obs_id,
         original_confidence: calibration.original_confidence * 100.0,
         calibrated_confidence: calibration.confidence * 100.0,
         reasoning: calibration.reasoning,
@@ -199,7 +211,7 @@ pub async fn get_observation_explanation(
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<Json<ObservationExplanation>, ApiError> {
     // Require LLM provider
-    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+    let provider = state.llm_provider.clone().ok_or_else(|| {
         ApiError::BadRequest(
             "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
                 .to_string(),
@@ -213,14 +225,18 @@ pub async fn get_observation_explanation(
         .observations
         .iter()
         .find(|o| o.id == id)
-        .ok_or_else(|| ApiError::NotFound(format!("Observation {} not found", id)))?;
+        .ok_or_else(|| ApiError::NotFound(format!("Observation {} not found", id)))?
+        .clone();
+
+    let original_confidence = observation.confidence;
 
     // Find the column schema
     let column = curation
         .schema
         .columns
         .iter()
-        .find(|c| c.name == observation.column);
+        .find(|c| c.name == observation.column)
+        .cloned();
 
     // Get domain from curation context
     let hints = ContextHints::new().with_domain(
@@ -232,19 +248,22 @@ pub async fn get_observation_explanation(
             .unwrap_or("general"),
     );
 
-    let explanation = provider
-        .explain_observation(observation, column, &hints)
-        .map_err(|e| ApiError::Internal(e.to_string()))?;
+    let obs_id = id.clone();
 
-    // Get calibrated confidence
-    let calibration = provider
-        .calibrate_confidence(observation, column, &hints)
-        .map_err(|e| ApiError::Internal(e.to_string()))?;
+    // Run blocking LLM calls in a separate thread
+    let (explanation, calibration) = tokio::task::spawn_blocking(move || {
+        let exp = provider.explain_observation(&observation, column.as_ref(), &hints)?;
+        let cal = provider.calibrate_confidence(&observation, column.as_ref(), &hints)?;
+        Ok::<_, crucible::CrucibleError>((exp, cal))
+    })
+    .await
+    .map_err(|e| ApiError::Internal(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     Ok(Json(ObservationExplanation {
-        observation_id: id,
+        observation_id: obs_id,
         explanation,
-        original_confidence: observation.confidence * 100.0,
+        original_confidence: original_confidence * 100.0,
         calibrated_confidence: calibration.confidence * 100.0,
         calibration_reasoning: calibration.reasoning,
         suggested_questions: vec![

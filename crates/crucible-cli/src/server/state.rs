@@ -55,11 +55,6 @@ impl AppState {
         }
     }
 
-    /// Check if LLM features are available.
-    pub fn has_llm(&self) -> bool {
-        self.llm_provider.is_some()
-    }
-
     /// Save the curation layer to disk.
     pub async fn save(&self) -> Result<(), crucible::CrucibleError> {
         let curation = self.curation.read().await;
