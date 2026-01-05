@@ -108,3 +108,43 @@ export interface DataPreviewResponse {
   total_rows: number
   truncated: boolean
 }
+
+// Interactive explanation types
+export interface AskQuestionRequest {
+  question: string
+  observation_id?: string
+  suggestion_id?: string
+}
+
+export interface AskQuestionResponse {
+  answer: string
+  confidence: number
+  follow_up_questions: string[]
+}
+
+export interface CalibrateConfidenceRequest {
+  observation_id: string
+}
+
+export interface ConfidenceFactorInfo {
+  name: string
+  impact: number
+  explanation: string
+}
+
+export interface CalibrateConfidenceResponse {
+  observation_id: string
+  original_confidence: number
+  calibrated_confidence: number
+  reasoning: string
+  factors: ConfidenceFactorInfo[]
+}
+
+export interface ObservationExplanation {
+  observation_id: string
+  explanation: string
+  original_confidence: number
+  calibrated_confidence: number
+  calibration_reasoning: string
+  suggested_questions: string[]
+}

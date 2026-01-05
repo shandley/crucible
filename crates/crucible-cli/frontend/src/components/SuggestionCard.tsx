@@ -11,6 +11,7 @@ interface SuggestionCardProps {
   isSelected?: boolean
   onAccept: (notes?: string) => void
   onReject: (notes: string) => void
+  onAsk?: () => void
 }
 
 const actionColors: Record<string, 'default' | 'warning' | 'destructive' | 'success'> = {
@@ -30,6 +31,7 @@ export function SuggestionCard({
   isSelected = false,
   onAccept,
   onReject,
+  onAsk,
 }: SuggestionCardProps) {
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
@@ -56,9 +58,20 @@ export function SuggestionCard({
               P{suggestion.priority}
             </span>
           </div>
-          <span className="text-sm font-medium">
-            {Math.round(suggestion.confidence * 100)}%
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">
+              {Math.round(suggestion.confidence * 100)}%
+            </span>
+            {onAsk && (
+              <button
+                onClick={onAsk}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                title="Ask about this issue"
+              >
+                Ask
+              </button>
+            )}
+          </div>
         </div>
       </CardHeader>
 

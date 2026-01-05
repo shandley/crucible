@@ -219,6 +219,191 @@ You have expertise in:
 - General tabular data patterns"#
 }
 
+/// Build a prompt for interactive question answering.
+pub fn question_prompt(
+    question: &str,
+    observation: Option<&Observation>,
+    suggestion: Option<&crate::suggestion::Suggestion>,
+    column: Option<&ColumnSchema>,
+    samples: &[String],
+    context: &ContextHints,
+) -> String {
+    let mut context_parts = Vec::new();
+
+    if let Some(obs) = observation {
+        let evidence_str = serde_json::to_string_pretty(&obs.evidence)
+            .unwrap_or_else(|_| "Unable to serialize evidence".to_string());
+        context_parts.push(format!(
+            r#"## Observation
+- ID: {}
+- Type: {:?}
+- Severity: {:?}
+- Column: {}
+- Description: {}
+
+### Evidence
+{}"#,
+            obs.id, obs.observation_type, obs.severity, obs.column, obs.description, evidence_str
+        ));
+    }
+
+    if let Some(sug) = suggestion {
+        context_parts.push(format!(
+            r#"## Suggestion
+- ID: {}
+- Action: {:?}
+- Priority: {}
+- Rationale: {}
+- Affected Rows: {}
+- Confidence: {:.0}%"#,
+            sug.id, sug.action, sug.priority, sug.rationale, sug.affected_rows, sug.confidence * 100.0
+        ));
+    }
+
+    if let Some(col) = column {
+        let stats_str = if let Some(ref numeric) = col.statistics.numeric {
+            format!(
+                "Numeric stats: min={:.2}, max={:.2}, mean={:.2}",
+                numeric.min, numeric.max, numeric.mean
+            )
+        } else {
+            format!(
+                "Cardinality: {} unique values out of {}",
+                col.statistics.unique_count, col.statistics.count
+            )
+        };
+        context_parts.push(format!(
+            r#"## Column Information
+- Name: {}
+- Type: {:?}
+- Semantic Role: {:?}
+- {}"#,
+            col.name, col.inferred_type, col.semantic_role, stats_str
+        ));
+    }
+
+    if !samples.is_empty() {
+        let sample_str = samples
+            .iter()
+            .take(5)
+            .map(|s| format!("  - \"{}\"", s))
+            .collect::<Vec<_>>()
+            .join("\n");
+        context_parts.push(format!("## Sample Values\n{}", sample_str));
+    }
+
+    let context_str = if context_parts.is_empty() {
+        "No additional context available.".to_string()
+    } else {
+        context_parts.join("\n\n")
+    };
+
+    format!(
+        r#"Answer this question about a data quality issue.
+
+## User Question
+{question}
+
+{context_str}
+
+## Domain Context
+{}
+
+## Task
+Provide a clear, helpful answer to the user's question. Be specific and reference
+the actual data when possible. If you're uncertain, acknowledge it and suggest
+what additional information might help.
+
+After your answer, suggest 1-2 relevant follow-up questions the user might want to ask.
+
+Respond with a JSON object:
+{{
+  "answer": "Your detailed answer here...",
+  "confidence": 0.0-1.0,
+  "follow_up_questions": ["Question 1?", "Question 2?"]
+}}"#,
+        context.to_prompt_string()
+    )
+}
+
+/// Build a prompt for confidence calibration.
+pub fn confidence_calibration_prompt(
+    observation: &Observation,
+    column: Option<&ColumnSchema>,
+    context: &ContextHints,
+) -> String {
+    let column_info = if let Some(col) = column {
+        format!(
+            "Column '{}' (type: {:?}, role: {:?})",
+            col.name, col.inferred_type, col.semantic_role
+        )
+    } else {
+        format!("Column '{}'", observation.column)
+    };
+
+    let evidence_str = serde_json::to_string_pretty(&observation.evidence)
+        .unwrap_or_else(|_| "Unable to serialize evidence".to_string());
+
+    let domain = context.domain.as_deref().unwrap_or("general");
+
+    format!(
+        r#"Calibrate the confidence score for this data quality observation.
+
+## Observation
+- Type: {:?}
+- Severity: {:?}
+- {column_info}
+- Description: {}
+- Current Confidence: {:.0}%
+
+## Evidence
+{}
+
+## Domain Context
+Domain: {domain}
+{}
+
+## Task
+Evaluate whether the current confidence score is appropriate for this observation
+in the given domain context. Consider:
+
+1. **Pattern Recognition**: Is this a well-known pattern in {domain} data?
+   - Common patterns should have HIGHER confidence
+   - Unusual or ambiguous patterns should have LOWER confidence
+
+2. **Domain Standards**: Does {domain} have specific standards or conventions?
+   - Violations of known standards should have HIGHER confidence
+   - Edge cases or domain-specific exceptions should have LOWER confidence
+
+3. **Data Context**: What does the evidence suggest?
+   - Clear, unambiguous issues should have HIGHER confidence
+   - Borderline cases should have LOWER confidence
+
+4. **False Positive Risk**: How likely is this to be a false alarm?
+   - Low false-positive risk should have HIGHER confidence
+   - High false-positive risk should have LOWER confidence
+
+Respond with a JSON object:
+{{
+  "calibrated_confidence": 0.0-1.0,
+  "reasoning": "Explanation of why the confidence was adjusted...",
+  "factors": [
+    {{
+      "name": "Factor name",
+      "impact": -1.0 to 1.0 (negative lowers confidence, positive raises it),
+      "explanation": "Why this factor applies..."
+    }}
+  ]
+}}"#,
+        observation.observation_type,
+        observation.severity,
+        observation.description,
+        observation.confidence * 100.0,
+        evidence_str,
+        context.to_prompt_string()
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

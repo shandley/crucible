@@ -90,7 +90,8 @@ pub use curation::{CurationContext, CurationLayer, Decision, DecisionStatus};
 pub use error::{CrucibleError, Result};
 pub use input::{ContextHints, DataTable, Parser, SourceMetadata};
 pub use llm::{
-    AnthropicProvider, LlmConfig, LlmProvider, MockProvider, OllamaProvider, OpenAIProvider,
+    AnthropicProvider, CalibratedConfidence, ConfidenceFactor, LlmConfig, LlmProvider,
+    MockProvider, OllamaProvider, OpenAIProvider, QuestionContext, QuestionResponse,
     SchemaEnhancement,
 };
 pub use schema::{ColumnSchema, ColumnType, Constraint, SemanticRole, TableSchema};

@@ -32,7 +32,14 @@ pub fn create_router(state: AppState) -> Router {
         .route("/decisions/:id/reset", post(handlers::reset_decision))
         // Batch operations
         .route("/batch/accept", post(handlers::batch_accept))
-        .route("/batch/reject", post(handlers::batch_reject));
+        .route("/batch/reject", post(handlers::batch_reject))
+        // Interactive explanations (LLM-powered)
+        .route("/explain/ask", post(handlers::ask_question))
+        .route("/explain/calibrate", post(handlers::calibrate_confidence))
+        .route(
+            "/explain/observation/:id",
+            get(handlers::get_observation_explanation),
+        );
 
     Router::new()
         .nest("/api", api_routes)

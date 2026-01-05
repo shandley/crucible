@@ -331,6 +331,168 @@ impl LlmProvider for MockProvider {
     fn name(&self) -> &str {
         "mock"
     }
+
+    fn answer_question(
+        &self,
+        question_context: &super::provider::QuestionContext,
+        hints: &ContextHints,
+    ) -> crate::error::Result<super::provider::QuestionResponse> {
+        let domain = hints.domain.as_deref().unwrap_or("general");
+
+        // Generate a contextual mock answer based on the question
+        let answer = if let Some(ref obs) = question_context.observation {
+            format!(
+                "This {:?} issue in column '{}' was detected because: {}. \
+                 In {} data, this type of issue typically indicates {}. \
+                 The confidence of {:.0}% reflects the statistical evidence found.",
+                obs.observation_type,
+                obs.column,
+                obs.description,
+                domain,
+                match obs.observation_type {
+                    ObservationType::MissingPattern => "non-standard null value encoding",
+                    ObservationType::Inconsistency => "data entry variations or format drift",
+                    ObservationType::Outlier => "potential data entry errors or edge cases",
+                    ObservationType::Duplicate => "possible data duplication or key conflicts",
+                    _ => "a data quality concern that warrants review",
+                },
+                obs.confidence * 100.0
+            )
+        } else if let Some(ref sug) = question_context.suggestion {
+            format!(
+                "The suggested {:?} action with priority {} is recommended because: {}. \
+                 This affects {} rows and has a {:.0}% confidence level.",
+                sug.action,
+                sug.priority,
+                sug.rationale,
+                sug.affected_rows,
+                sug.confidence * 100.0
+            )
+        } else {
+            format!(
+                "Based on the {} domain context, here's what I can tell you about '{}': \
+                 This appears to be a data quality question. Please provide more context \
+                 about a specific observation or suggestion for a more detailed answer.",
+                domain, question_context.question
+            )
+        };
+
+        let follow_ups = vec![
+            "What would happen if I accept this suggestion?".to_string(),
+            "Are there similar issues in other columns?".to_string(),
+        ];
+
+        Ok(super::provider::QuestionResponse {
+            answer,
+            confidence: 0.8,
+            follow_up_questions: follow_ups,
+        })
+    }
+
+    fn calibrate_confidence(
+        &self,
+        observation: &Observation,
+        _column: Option<&ColumnSchema>,
+        hints: &ContextHints,
+    ) -> crate::error::Result<super::provider::CalibratedConfidence> {
+        let domain = hints.domain.as_deref().unwrap_or("general");
+        let original = observation.confidence;
+
+        // Apply domain-specific calibration factors
+        let mut factors = Vec::new();
+        let mut adjustment = 0.0;
+
+        // Factor 1: Domain familiarity
+        let domain_factor = match domain {
+            "biomedical" | "clinical" => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Domain Standards".to_string(),
+                    impact: 0.1,
+                    explanation: "Biomedical data has well-defined standards (MIxS, NCBI) \
+                                  making validation more reliable.".to_string(),
+                });
+                0.1
+            }
+            "environmental" => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Domain Standards".to_string(),
+                    impact: 0.05,
+                    explanation: "Environmental data often follows MIxS standards.".to_string(),
+                });
+                0.05
+            }
+            _ => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Domain Standards".to_string(),
+                    impact: -0.05,
+                    explanation: "General domain has fewer established validation patterns.".to_string(),
+                });
+                -0.05
+            }
+        };
+        adjustment += domain_factor;
+
+        // Factor 2: Observation type reliability
+        let type_factor = match observation.observation_type {
+            ObservationType::TypeMismatch | ObservationType::ConstraintViolation => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Detection Reliability".to_string(),
+                    impact: 0.1,
+                    explanation: "Type and constraint violations are objectively verifiable.".to_string(),
+                });
+                0.1
+            }
+            ObservationType::Inconsistency => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Detection Reliability".to_string(),
+                    impact: 0.0,
+                    explanation: "Inconsistencies may have legitimate variations.".to_string(),
+                });
+                0.0
+            }
+            ObservationType::Outlier => {
+                factors.push(super::provider::ConfidenceFactor {
+                    name: "Detection Reliability".to_string(),
+                    impact: -0.1,
+                    explanation: "Outliers may be valid edge cases rather than errors.".to_string(),
+                });
+                -0.1
+            }
+            _ => 0.0,
+        };
+        adjustment += type_factor;
+
+        // Factor 3: Evidence strength
+        let evidence_factor = if observation.evidence.occurrences.unwrap_or(0) > 5 {
+            factors.push(super::provider::ConfidenceFactor {
+                name: "Evidence Strength".to_string(),
+                impact: 0.05,
+                explanation: "Multiple occurrences strengthen the detection.".to_string(),
+            });
+            0.05
+        } else {
+            0.0
+        };
+        adjustment += evidence_factor;
+
+        let calibrated = (original + adjustment).clamp(0.0, 1.0);
+
+        let reasoning = format!(
+            "Confidence {} from {:.0}% to {:.0}% based on {} domain context \
+             and observation characteristics.",
+            if adjustment >= 0.0 { "increased" } else { "decreased" },
+            original * 100.0,
+            calibrated * 100.0,
+            domain
+        );
+
+        Ok(super::provider::CalibratedConfidence {
+            confidence: calibrated,
+            original_confidence: original,
+            reasoning,
+            factors,
+        })
+    }
 }
 
 #[cfg(test)]

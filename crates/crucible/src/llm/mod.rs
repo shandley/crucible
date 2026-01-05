@@ -38,4 +38,7 @@ pub use anthropic::AnthropicProvider;
 pub use mock::MockProvider;
 pub use ollama::OllamaProvider;
 pub use openai::OpenAIProvider;
-pub use provider::{LlmConfig, LlmProvider, SchemaEnhancement};
+pub use provider::{
+    CalibratedConfidence, ConfidenceFactor, LlmConfig, LlmProvider, QuestionContext,
+    QuestionResponse, SchemaEnhancement,
+};

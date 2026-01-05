@@ -1,4 +1,14 @@
-import type { CurationResponse, DataPreviewResponse, DecisionResponse, SaveResponse } from '../types'
+import type {
+  AskQuestionRequest,
+  AskQuestionResponse,
+  CalibrateConfidenceRequest,
+  CalibrateConfidenceResponse,
+  CurationResponse,
+  DataPreviewResponse,
+  DecisionResponse,
+  ObservationExplanation,
+  SaveResponse,
+} from '../types'
 
 const API_BASE = '/api'
 
@@ -102,4 +112,29 @@ export async function batchReject(request: BatchRequest): Promise<BatchResponse>
     method: 'POST',
     body: JSON.stringify(request),
   })
+}
+
+// Interactive explanation APIs
+export async function askQuestion(
+  request: AskQuestionRequest
+): Promise<AskQuestionResponse> {
+  return fetchApi<AskQuestionResponse>('/explain/ask', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+}
+
+export async function calibrateConfidence(
+  request: CalibrateConfidenceRequest
+): Promise<CalibrateConfidenceResponse> {
+  return fetchApi<CalibrateConfidenceResponse>('/explain/calibrate', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+}
+
+export async function getObservationExplanation(
+  observationId: string
+): Promise<ObservationExplanation> {
+  return fetchApi<ObservationExplanation>(`/explain/observation/${observationId}`)
 }

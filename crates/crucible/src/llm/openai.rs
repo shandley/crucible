@@ -226,6 +226,85 @@ impl LlmProvider for OpenAIProvider {
     fn name(&self) -> &str {
         "openai"
     }
+
+    fn answer_question(
+        &self,
+        question_context: &super::provider::QuestionContext,
+        hints: &ContextHints,
+    ) -> Result<super::provider::QuestionResponse> {
+        let prompt = prompts::question_prompt(
+            &question_context.question,
+            question_context.observation.as_ref(),
+            question_context.suggestion.as_ref(),
+            question_context.column.as_ref(),
+            &question_context.sample_values,
+            hints,
+        );
+
+        let response = self.send_message(&prompt)?;
+        let parsed: QuestionResponseParsed = self.parse_json_response(&response)?;
+
+        Ok(super::provider::QuestionResponse {
+            answer: parsed.answer,
+            confidence: parsed.confidence,
+            follow_up_questions: parsed.follow_up_questions,
+        })
+    }
+
+    fn calibrate_confidence(
+        &self,
+        observation: &Observation,
+        column: Option<&ColumnSchema>,
+        hints: &ContextHints,
+    ) -> Result<super::provider::CalibratedConfidence> {
+        let prompt = prompts::confidence_calibration_prompt(observation, column, hints);
+        let response = self.send_message(&prompt)?;
+        let parsed: ConfidenceCalibrationResponse = self.parse_json_response(&response)?;
+
+        Ok(super::provider::CalibratedConfidence {
+            confidence: parsed.calibrated_confidence,
+            original_confidence: observation.confidence,
+            reasoning: parsed.reasoning,
+            factors: parsed
+                .factors
+                .into_iter()
+                .map(|f| super::provider::ConfidenceFactor {
+                    name: f.name,
+                    impact: f.impact,
+                    explanation: f.explanation,
+                })
+                .collect(),
+        })
+    }
+}
+
+/// Parsed question response.
+#[derive(Debug, Deserialize)]
+struct QuestionResponseParsed {
+    answer: String,
+    #[serde(default)]
+    confidence: f64,
+    #[serde(default)]
+    follow_up_questions: Vec<String>,
+}
+
+/// Parsed confidence calibration response.
+#[derive(Debug, Deserialize)]
+struct ConfidenceCalibrationResponse {
+    calibrated_confidence: f64,
+    reasoning: String,
+    #[serde(default)]
+    factors: Vec<ConfidenceFactorParsed>,
+}
+
+/// Parsed confidence factor.
+#[derive(Debug, Deserialize)]
+struct ConfidenceFactorParsed {
+    name: String,
+    #[serde(default)]
+    impact: f64,
+    #[serde(default)]
+    explanation: String,
 }
 
 /// OpenAI API response structure.
