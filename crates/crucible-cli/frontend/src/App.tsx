@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject } from './api/client'
 import type { BatchRequest } from './api/client'
-import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview } from './components'
+import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview, AskQuestionDialog } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
 
 /** An action that can be undone/redone */
@@ -96,6 +96,15 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const suggestionRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const [askDialogOpen, setAskDialogOpen] = useState(false)
+  const [askObservationId, setAskObservationId] = useState<string | undefined>()
+  const [askSuggestionId, setAskSuggestionId] = useState<string | undefined>()
+
+  const openAskDialog = (suggestion: SuggestionInfo) => {
+    setAskObservationId(suggestion.observation_id)
+    setAskSuggestionId(suggestion.id)
+    setAskDialogOpen(true)
+  }
 
   const { data: curation, isLoading, error } = useQuery({
     queryKey: ['curation'],
@@ -644,6 +653,7 @@ export default function App() {
                             onReject={(notes) =>
                               rejectMutation.mutate({ id: suggestion.id, notes })
                             }
+                            onAsk={() => openAskDialog(suggestion)}
                           />
                         </div>
                       ))}
@@ -674,6 +684,7 @@ export default function App() {
                       onReject={(notes) =>
                         rejectMutation.mutate({ id: suggestion.id, notes })
                       }
+                      onAsk={() => openAskDialog(suggestion)}
                     />
                   </div>
                 ))}
@@ -704,6 +715,7 @@ export default function App() {
                         isSelected={selectedSuggestionId === suggestion.id}
                         onAccept={() => {}}
                         onReject={() => {}}
+                        onAsk={() => openAskDialog(suggestion)}
                       />
                     </div>
                   ))}
@@ -721,6 +733,19 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* Ask Question Dialog */}
+      {askDialogOpen && (
+        <AskQuestionDialog
+          observationId={askObservationId}
+          suggestionId={askSuggestionId}
+          onClose={() => {
+            setAskDialogOpen(false)
+            setAskObservationId(undefined)
+            setAskSuggestionId(undefined)
+          }}
+        />
+      )}
     </div>
   )
 }
