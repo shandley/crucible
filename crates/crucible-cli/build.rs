@@ -1,62 +1,70 @@
 //! Build script for crucible-cli.
 //!
-//! This script builds the React frontend when compiling in release mode.
+//! This script builds the React frontend for embedding in the binary.
 
 use std::process::Command;
 
 fn main() {
-    // Only build frontend in release mode or if CRUCIBLE_BUILD_FRONTEND is set
-    let is_release = std::env::var("PROFILE").map(|p| p == "release").unwrap_or(false);
-    let force_build = std::env::var("CRUCIBLE_BUILD_FRONTEND").is_ok();
+    let frontend_dir = std::path::Path::new("frontend");
+    let dist_dir = std::path::Path::new("dist");
 
-    if is_release || force_build {
-        println!("cargo:warning=Building frontend...");
+    // Skip frontend build if CRUCIBLE_SKIP_FRONTEND is set (for faster iteration on Rust code)
+    if std::env::var("CRUCIBLE_SKIP_FRONTEND").is_ok() {
+        // Ensure dist exists with placeholder
+        if !dist_dir.exists() {
+            create_placeholder(dist_dir);
+        }
+        return;
+    }
 
-        let frontend_dir = std::path::Path::new("frontend");
+    // Check if frontend source exists
+    if !frontend_dir.exists() {
+        println!("cargo:warning=Frontend directory not found, skipping build");
+        create_placeholder(dist_dir);
+        return;
+    }
 
-        // Check if node_modules exists
-        if !frontend_dir.join("node_modules").exists() {
-            let status = Command::new("npm")
-                .args(["install"])
-                .current_dir(frontend_dir)
-                .status()
-                .expect("Failed to run npm install");
+    // Check if node_modules exists, install if not
+    if !frontend_dir.join("node_modules").exists() {
+        println!("cargo:warning=Installing frontend dependencies...");
+        let status = Command::new("npm")
+            .args(["install"])
+            .current_dir(frontend_dir)
+            .status();
 
-            if !status.success() {
-                panic!("npm install failed");
+        match status {
+            Ok(s) if s.success() => {}
+            Ok(_) => {
+                println!("cargo:warning=npm install failed, using placeholder");
+                create_placeholder(dist_dir);
+                return;
+            }
+            Err(e) => {
+                println!("cargo:warning=npm not found ({e}), using placeholder");
+                create_placeholder(dist_dir);
+                return;
             }
         }
+    }
 
-        // Build the frontend
-        let status = Command::new("npm")
-            .args(["run", "build"])
-            .current_dir(frontend_dir)
-            .status()
-            .expect("Failed to run npm build");
+    // Build the frontend
+    println!("cargo:warning=Building frontend...");
+    let status = Command::new("npm")
+        .args(["run", "build"])
+        .current_dir(frontend_dir)
+        .status();
 
-        if !status.success() {
-            panic!("Frontend build failed");
+    match status {
+        Ok(s) if s.success() => {
+            println!("cargo:warning=Frontend built successfully");
         }
-    } else {
-        // In development, create an empty dist folder if it doesn't exist
-        // so rust-embed doesn't fail
-        let dist_dir = std::path::Path::new("dist");
-        if !dist_dir.exists() {
-            std::fs::create_dir_all(dist_dir).ok();
-            // Create a placeholder index.html for development
-            std::fs::write(
-                dist_dir.join("index.html"),
-                r#"<!DOCTYPE html>
-<html>
-<head><title>Crucible - Development</title></head>
-<body>
-<h1>Crucible Development Mode</h1>
-<p>Run the frontend dev server: <code>cd frontend && npm run dev</code></p>
-<p>Then visit <a href="http://localhost:5173">http://localhost:5173</a></p>
-</body>
-</html>"#,
-            )
-            .ok();
+        Ok(_) => {
+            println!("cargo:warning=Frontend build failed, using placeholder");
+            create_placeholder(dist_dir);
+        }
+        Err(e) => {
+            println!("cargo:warning=Could not run npm ({e}), using placeholder");
+            create_placeholder(dist_dir);
         }
     }
 
@@ -64,4 +72,21 @@ fn main() {
     println!("cargo:rerun-if-changed=frontend/src");
     println!("cargo:rerun-if-changed=frontend/index.html");
     println!("cargo:rerun-if-changed=frontend/package.json");
+}
+
+fn create_placeholder(dist_dir: &std::path::Path) {
+    std::fs::create_dir_all(dist_dir).ok();
+    std::fs::write(
+        dist_dir.join("index.html"),
+        r#"<!DOCTYPE html>
+<html>
+<head><title>Crucible - Build Error</title></head>
+<body>
+<h1>Frontend Not Built</h1>
+<p>The frontend could not be built. Please ensure Node.js and npm are installed.</p>
+<p>Then rebuild with: <code>cargo build --bin crucible</code></p>
+</body>
+</html>"#,
+    )
+    .ok();
 }

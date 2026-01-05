@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { askQuestion, getObservationExplanation } from '../api/client'
 import type { AskQuestionResponse, ObservationExplanation } from '../types'
 import { Button } from './Button'
@@ -36,13 +36,14 @@ export function AskQuestionDialog({
   }
 
   // Load explanation on mount
-  useState(() => {
+  useEffect(() => {
     loadExplanation()
-  })
+  }, [])
 
   const handleAsk = async (questionText?: string) => {
     const q = questionText || question
     if (!q.trim()) return
+
     setLoading(true)
     setError(null)
     try {
@@ -61,7 +62,6 @@ export function AskQuestionDialog({
   }
 
   const handleFollowUp = (q: string) => {
-    // Auto-submit the follow-up question
     handleAsk(q)
   }
 
@@ -127,7 +127,8 @@ export function AskQuestionDialog({
                       <button
                         key={i}
                         onClick={() => handleFollowUp(q)}
-                        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded"
+                        disabled={loading}
+                        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {q}
                       </button>
@@ -173,7 +174,8 @@ export function AskQuestionDialog({
                 <button
                   key={i}
                   onClick={() => handleFollowUp(q)}
-                  className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded"
+                  disabled={loading}
+                  className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {q}
                 </button>
