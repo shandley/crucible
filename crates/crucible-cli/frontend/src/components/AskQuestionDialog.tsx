@@ -40,13 +40,14 @@ export function AskQuestionDialog({
     loadExplanation()
   })
 
-  const handleAsk = async () => {
-    if (!question.trim()) return
+  const handleAsk = async (questionText?: string) => {
+    const q = questionText || question
+    if (!q.trim()) return
     setLoading(true)
     setError(null)
     try {
       const result = await askQuestion({
-        question,
+        question: q,
         observation_id: observationId,
         suggestion_id: suggestionId,
       })
@@ -60,7 +61,8 @@ export function AskQuestionDialog({
   }
 
   const handleFollowUp = (q: string) => {
-    setQuestion(q)
+    // Auto-submit the follow-up question
+    handleAsk(q)
   }
 
   return (
@@ -157,7 +159,7 @@ export function AskQuestionDialog({
               disabled={loading}
             />
             <Button
-              onClick={handleAsk}
+              onClick={() => handleAsk()}
               disabled={loading || !question.trim()}
             >
               {loading ? 'Asking...' : 'Ask'}
