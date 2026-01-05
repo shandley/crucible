@@ -138,3 +138,14 @@ export async function getObservationExplanation(
 ): Promise<ObservationExplanation> {
   return fetchApi<ObservationExplanation>(`/explain/observation/${observationId}`)
 }
+
+// LLM status
+export interface LlmStatusResponse {
+  available: boolean
+  provider: string | null
+  message: string
+}
+
+export async function getLlmStatus(): Promise<LlmStatusResponse> {
+  return fetchApi<LlmStatusResponse>('/llm/status')
+}

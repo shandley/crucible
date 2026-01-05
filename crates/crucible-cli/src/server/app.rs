@@ -39,7 +39,9 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/explain/observation/:id",
             get(handlers::get_observation_explanation),
-        );
+        )
+        // LLM status
+        .route("/llm/status", get(handlers::get_llm_status));
 
     Router::new()
         .nest("/api", api_routes)

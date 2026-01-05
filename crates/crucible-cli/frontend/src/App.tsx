@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject } from './api/client'
+import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject, getLlmStatus } from './api/client'
 import type { BatchRequest } from './api/client'
 import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview, AskQuestionDialog } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
@@ -115,6 +115,14 @@ export default function App() {
     queryKey: ['data-preview'],
     queryFn: getDataPreview,
   })
+
+  // Check if LLM is available for Ask feature
+  const { data: llmStatus } = useQuery({
+    queryKey: ['llm-status'],
+    queryFn: getLlmStatus,
+  })
+
+  const llmAvailable = llmStatus?.available ?? false
 
   const acceptMutation = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
@@ -653,7 +661,7 @@ export default function App() {
                             onReject={(notes) =>
                               rejectMutation.mutate({ id: suggestion.id, notes })
                             }
-                            onAsk={() => openAskDialog(suggestion)}
+                            onAsk={llmAvailable ? () => openAskDialog(suggestion) : undefined}
                           />
                         </div>
                       ))}
@@ -684,7 +692,7 @@ export default function App() {
                       onReject={(notes) =>
                         rejectMutation.mutate({ id: suggestion.id, notes })
                       }
-                      onAsk={() => openAskDialog(suggestion)}
+                      onAsk={llmAvailable ? () => openAskDialog(suggestion) : undefined}
                     />
                   </div>
                 ))}
@@ -715,7 +723,7 @@ export default function App() {
                         isSelected={selectedSuggestionId === suggestion.id}
                         onAccept={() => {}}
                         onReject={() => {}}
-                        onAsk={() => openAskDialog(suggestion)}
+                        onAsk={llmAvailable ? () => openAskDialog(suggestion) : undefined}
                       />
                     </div>
                   ))}

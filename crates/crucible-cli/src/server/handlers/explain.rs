@@ -3,7 +3,7 @@
 use axum::{extract::State, Json};
 use serde::{Deserialize, Serialize};
 
-use crucible::{ContextHints, LlmProvider, MockProvider, QuestionContext};
+use crucible::{ContextHints, QuestionContext};
 
 use crate::server::error::ApiError;
 use crate::server::state::AppState;
@@ -80,6 +80,14 @@ pub async fn ask_question(
     State(state): State<AppState>,
     Json(request): Json<AskQuestionRequest>,
 ) -> Result<Json<AskQuestionResponse>, ApiError> {
+    // Require LLM provider
+    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+        ApiError::BadRequest(
+            "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
+                .to_string(),
+        )
+    })?;
+
     let curation = state.curation.read().await;
 
     // Build question context
@@ -114,8 +122,6 @@ pub async fn ask_question(
             .unwrap_or("general"),
     );
 
-    // Use mock provider for now (real LLM integration would be configured separately)
-    let provider = MockProvider::new();
     let response = provider
         .answer_question(&context, &hints)
         .map_err(|e| ApiError::Internal(e.to_string()))?;
@@ -132,6 +138,14 @@ pub async fn calibrate_confidence(
     State(state): State<AppState>,
     Json(request): Json<CalibrateConfidenceRequest>,
 ) -> Result<Json<CalibrateConfidenceResponse>, ApiError> {
+    // Require LLM provider
+    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+        ApiError::BadRequest(
+            "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
+                .to_string(),
+        )
+    })?;
+
     let curation = state.curation.read().await;
 
     // Find the observation
@@ -158,8 +172,6 @@ pub async fn calibrate_confidence(
             .unwrap_or("general"),
     );
 
-    // Use mock provider for now
-    let provider = MockProvider::new();
     let calibration = provider
         .calibrate_confidence(observation, column, &hints)
         .map_err(|e| ApiError::Internal(e.to_string()))?;
@@ -186,6 +198,14 @@ pub async fn get_observation_explanation(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<Json<ObservationExplanation>, ApiError> {
+    // Require LLM provider
+    let provider = state.llm_provider.as_ref().ok_or_else(|| {
+        ApiError::BadRequest(
+            "LLM not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable."
+                .to_string(),
+        )
+    })?;
+
     let curation = state.curation.read().await;
 
     // Find the observation
@@ -212,8 +232,6 @@ pub async fn get_observation_explanation(
             .unwrap_or("general"),
     );
 
-    // Use mock provider for explanation
-    let provider = MockProvider::new();
     let explanation = provider
         .explain_observation(observation, column, &hints)
         .map_err(|e| ApiError::Internal(e.to_string()))?;
@@ -257,4 +275,34 @@ pub struct ObservationExplanation {
 
     /// Suggested questions to ask.
     pub suggested_questions: Vec<String>,
+}
+
+/// Response for LLM status check.
+#[derive(Debug, Serialize)]
+pub struct LlmStatusResponse {
+    /// Whether LLM is available.
+    pub available: bool,
+
+    /// Name of the configured provider (if any).
+    pub provider: Option<String>,
+
+    /// Message for the user.
+    pub message: String,
+}
+
+/// GET /api/llm/status - Check if LLM is configured and available.
+pub async fn get_llm_status(State(state): State<AppState>) -> Json<LlmStatusResponse> {
+    if let Some(ref name) = state.llm_provider_name {
+        Json(LlmStatusResponse {
+            available: true,
+            provider: Some(name.clone()),
+            message: format!("LLM provider '{}' is configured and ready.", name),
+        })
+    } else {
+        Json(LlmStatusResponse {
+            available: false,
+            provider: None,
+            message: "No LLM configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY to enable AI-powered explanations.".to_string(),
+        })
+    }
 }
