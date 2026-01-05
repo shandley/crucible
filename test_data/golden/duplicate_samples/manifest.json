@@ -5,19 +5,19 @@
   "created": "2026-01-04",
   "domain": "biomedical",
   "expected_observations": {
-    "min_count": 0,
-    "types": [],
-    "columns_with_issues": []
+    "min_count": 1,
+    "types": ["Duplicate"],
+    "columns_with_issues": ["_table"]
   },
   "expected_suggestions": {
-    "min_count": 0,
-    "actions": []
+    "min_count": 1,
+    "actions": ["Flag"]
   },
   "notes": [
-    "PLACEHOLDER: Duplicate detection not yet implemented",
-    "FUTURE: Should detect exact duplicate rows",
-    "FUTURE: Should detect near-duplicates (same ID, different values)",
-    "FUTURE: Should detect ID reuse with conflicting data",
-    "Test data includes: exact duplicates, near-duplicates, ID conflicts"
+    "DuplicateRowValidator detects near-duplicates with different IDs",
+    "SAMPLE_001/002/004/007: identical content (gut, 45, IBD) but different sample_ids",
+    "SAMPLE_003/005: identical content (blood, 32, Healthy) but different sample_ids",
+    "SAMPLE_006: unique content (liver, 58, Cancer)",
+    "Detection helps identify potential data entry errors or redundant samples"
   ]
 }

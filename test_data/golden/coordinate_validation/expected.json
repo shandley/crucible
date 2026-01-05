@@ -1,21 +1,21 @@
 {
   "crucible_version": "1.0.0",
-  "created_at": "2026-01-04T23:41:09.456479Z",
-  "updated_at": "2026-01-04T23:41:09.456479Z",
+  "created_at": "2026-01-05T00:18:04.908704Z",
+  "updated_at": "2026-01-05T00:18:04.908704Z",
   "source": {
     "file": "input.tsv",
-    "path": "../../test_data/golden/coordinate_validation/input.tsv",
+    "path": "test_data/golden/coordinate_validation/input.tsv",
     "hash": "sha256:7a09a3a7a0a9a0878da4c44646d25ca7972c17eacf3d5683bce1477da4cdfd1b",
     "size_bytes": 458,
     "format": "tsv",
     "encoding": "utf-8",
     "row_count": 8,
     "column_count": 4,
-    "analyzed_at": "2026-01-04T23:41:09.338469Z"
+    "analyzed_at": "2026-01-05T00:18:04.790885Z"
   },
   "context": {
     "hints": {
-      "domain": "biomedical"
+      "domain": "environmental"
     },
     "file_context": {},
     "inference_config": {
@@ -103,8 +103,7 @@
         "inference_sources": [
           "statistical",
           "semantic"
-        ],
-        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+        ]
       },
       {
         "name": "lat_lon",
@@ -178,8 +177,7 @@
         "confidence": 0.6,
         "inference_sources": [
           "statistical"
-        ],
-        "llm_insight": "The 'lat_lon' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+        ]
       },
       {
         "name": "geo_loc_name",
@@ -253,8 +251,7 @@
         "confidence": 0.6,
         "inference_sources": [
           "statistical"
-        ],
-        "llm_insight": "The 'geo_loc_name' column appears to be a Identifier in a biomedical context. It contains String data with 8 unique values."
+        ]
       },
       {
         "name": "collection_date",
@@ -305,34 +302,76 @@
         "inference_sources": [
           "statistical",
           "semantic"
-        ],
-        "llm_insight": "The 'collection_date' column appears to be a Metadata in a biomedical context. It contains Date data with 8 unique values."
+        ]
       }
     ]
   },
-  "observations": [],
-  "suggestions": [],
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "pattern_violation",
+      "severity": "warning",
+      "column": "lat_lon",
+      "description": "1 value(s) could not be parsed as coordinates: [\"40.7128° N, 74.0060° W\"]",
+      "evidence": {
+        "occurrences": 1,
+        "percentage": 12.5,
+        "sample_rows": [
+          6
+        ],
+        "expected": "Format: 'DD.DDDD DD.DDDD' or 'DD.DDDDN DD.DDDDW'"
+      },
+      "confidence": 0.8,
+      "detected_at": "2026-01-05T00:18:04.908523Z",
+      "detector": "coordinate_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "flag",
+      "priority": 3,
+      "parameters": {
+        "column": "lat_lon",
+        "expected_pattern": "expected pattern",
+        "flag_column": "lat_lon_invalid_format",
+        "flag_value": "invalid_format",
+        "rows": [
+          6
+        ]
+      },
+      "rationale": "Flag 1 value(s) in column 'lat_lon' that don't match the expected format. Review and correct these entries.",
+      "affected_rows": 1,
+      "confidence": 0.8,
+      "reversible": true,
+      "suggested_at": "2026-01-05T00:18:04.908666Z",
+      "suggester": "rule_engine"
+    }
+  ],
   "decisions": [],
   "summary": {
     "total_columns": 4,
-    "columns_with_issues": 0,
-    "total_observations": 0,
+    "columns_with_issues": 1,
+    "total_observations": 1,
     "observations_by_severity": {
       "error": 0,
-      "warning": 0,
+      "warning": 1,
       "info": 0
     },
-    "observations_by_type": {},
-    "data_quality_score": 1.0,
-    "recommendation": "Data quality is good. Minor issues detected for review.",
-    "total_suggestions": 0,
+    "observations_by_type": {
+      "patternviolation": 1
+    },
+    "data_quality_score": 0.73,
+    "recommendation": "Data quality is acceptable. Consider addressing warnings.",
+    "total_suggestions": 1,
     "suggestions_by_status": {
-      "pending": 0,
+      "pending": 1,
       "accepted": 0,
       "modified": 0,
       "rejected": 0,
       "applied": 0
     },
-    "total_affected_rows": 0
+    "total_affected_rows": 1
   }
 }

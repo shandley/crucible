@@ -1,17 +1,17 @@
 {
   "crucible_version": "1.0.0",
-  "created_at": "2026-01-04T23:41:09.608646Z",
-  "updated_at": "2026-01-04T23:41:09.608646Z",
+  "created_at": "2026-01-05T00:17:15.994925Z",
+  "updated_at": "2026-01-05T00:17:15.994925Z",
   "source": {
     "file": "input.tsv",
-    "path": "../../test_data/golden/duplicate_samples/input.tsv",
+    "path": "test_data/golden/duplicate_samples/input.tsv",
     "hash": "sha256:328f443e993087ff828d3c65dec21d02130aa4f02c25b893fafe03371ed0123f",
     "size_bytes": 302,
     "format": "tsv",
     "encoding": "utf-8",
     "row_count": 7,
     "column_count": 5,
-    "analyzed_at": "2026-01-04T23:41:09.485080Z"
+    "analyzed_at": "2026-01-05T00:17:15.870515Z"
   },
   "context": {
     "hints": {
@@ -100,8 +100,7 @@
         "inference_sources": [
           "statistical",
           "semantic"
-        ],
-        "llm_insight": "The 'sample_id' column appears to be a Identifier in a biomedical context. It contains String data with 7 unique values."
+        ]
       },
       {
         "name": "organism",
@@ -146,8 +145,7 @@
         "confidence": 0.6,
         "inference_sources": [
           "statistical"
-        ],
-        "llm_insight": "The 'organism' column appears to be a Unknown in a biomedical context. It contains String data with 1 unique values."
+        ]
       },
       {
         "name": "tissue",
@@ -200,8 +198,7 @@
         "confidence": 0.6,
         "inference_sources": [
           "statistical"
-        ],
-        "llm_insight": "The 'tissue' column appears to be a Unknown in a biomedical context. It contains String data with 3 unique values."
+        ]
       },
       {
         "name": "age",
@@ -260,8 +257,7 @@
         "inference_sources": [
           "statistical",
           "semantic"
-        ],
-        "llm_insight": "The 'age' column appears to be a Covariate in a biomedical context. It contains Integer data with 3 unique values."
+        ]
       },
       {
         "name": "diagnosis",
@@ -315,34 +311,82 @@
         "inference_sources": [
           "statistical",
           "semantic"
-        ],
-        "llm_insight": "The 'diagnosis' column appears to be a Grouping in a biomedical context. It contains String data with 3 unique values."
+        ]
       }
     ]
   },
-  "observations": [],
-  "suggestions": [],
+  "observations": [
+    {
+      "id": "obs_001",
+      "type": "duplicate",
+      "severity": "warning",
+      "column": "_table",
+      "description": "6 row(s) have identical content but different sample_id values (potential data entry duplicates)",
+      "evidence": {
+        "occurrences": 2,
+        "percentage": 85.71428571428571,
+        "sample_rows": [
+          0,
+          1,
+          3,
+          6,
+          2
+        ]
+      },
+      "confidence": 0.85,
+      "detected_at": "2026-01-05T00:17:15.994812Z",
+      "detector": "duplicate_row_validator"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "sug_001",
+      "observation_id": "obs_001",
+      "action": "flag",
+      "priority": 1,
+      "parameters": {
+        "column": "_table",
+        "flag_column": "_table_duplicate",
+        "flag_value": "duplicate",
+        "rows": [
+          0,
+          1,
+          3,
+          6,
+          2
+        ]
+      },
+      "rationale": "Flag 2 duplicate value(s) in column '_table' for review. Duplicates in identifier columns may indicate data entry errors or need deduplication.",
+      "affected_rows": 2,
+      "confidence": 0.85,
+      "reversible": true,
+      "suggested_at": "2026-01-05T00:17:15.994889Z",
+      "suggester": "rule_engine"
+    }
+  ],
   "decisions": [],
   "summary": {
     "total_columns": 5,
-    "columns_with_issues": 0,
-    "total_observations": 0,
+    "columns_with_issues": 1,
+    "total_observations": 1,
     "observations_by_severity": {
       "error": 0,
-      "warning": 0,
+      "warning": 1,
       "info": 0
     },
-    "observations_by_type": {},
-    "data_quality_score": 1.0,
-    "recommendation": "Data quality is good. Minor issues detected for review.",
-    "total_suggestions": 0,
+    "observations_by_type": {
+      "duplicate": 1
+    },
+    "data_quality_score": 0.78,
+    "recommendation": "Data quality is acceptable. Consider addressing warnings.",
+    "total_suggestions": 1,
     "suggestions_by_status": {
-      "pending": 0,
+      "pending": 1,
       "accepted": 0,
       "modified": 0,
       "rejected": 0,
       "applied": 0
     },
-    "total_affected_rows": 0
+    "total_affected_rows": 2
   }
 }

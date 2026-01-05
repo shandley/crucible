@@ -2402,6 +2402,819 @@ impl Validator for TitleCaseValidator {
     }
 }
 
+// ============================================================================
+// Coordinate Validator
+// ============================================================================
+
+/// Validates geographic coordinate columns (lat/lon).
+///
+/// Detects:
+/// - Out-of-range latitude (must be -90 to 90)
+/// - Out-of-range longitude (must be -180 to 180)
+/// - Inconsistent coordinate formats (decimal degrees vs DMS)
+/// - Swapped lat/lon values
+/// - Coordinates in ocean when land expected (or vice versa)
+pub struct CoordinateValidator;
+
+impl CoordinateValidator {
+    /// Column name patterns that indicate coordinate data.
+    fn is_coordinate_column(name: &str) -> Option<CoordinateType> {
+        let lower = name.to_lowercase();
+
+        // Exclude location name columns (geo_loc_name is for place names, not coordinates)
+        if lower.contains("_name") || lower.ends_with("name") {
+            return None;
+        }
+
+        // Combined lat_lon column
+        if lower.contains("lat_lon")
+            || lower.contains("latlon")
+            || lower.contains("coordinates")
+            || lower == "geo_loc"
+            || lower == "location"
+        {
+            return Some(CoordinateType::Combined);
+        }
+
+        // Latitude column
+        if lower == "lat"
+            || lower == "latitude"
+            || lower.contains("_lat")
+            || lower.starts_with("lat_")
+        {
+            return Some(CoordinateType::Latitude);
+        }
+
+        // Longitude column
+        if lower == "lon"
+            || lower == "lng"
+            || lower == "long"
+            || lower == "longitude"
+            || lower.contains("_lon")
+            || lower.contains("_lng")
+            || lower.starts_with("lon_")
+            || lower.starts_with("lng_")
+        {
+            return Some(CoordinateType::Longitude);
+        }
+
+        None
+    }
+
+    /// Parse a coordinate value and return (value, format).
+    fn parse_coordinate(value: &str) -> Option<(f64, CoordinateFormat)> {
+        let trimmed = value.trim();
+
+        // Skip null/missing values
+        if DataTable::is_null_value(trimmed)
+            || trimmed.is_empty()
+            || trimmed.eq_ignore_ascii_case("missing")
+            || trimmed.eq_ignore_ascii_case("not collected")
+            || trimmed.eq_ignore_ascii_case("not applicable")
+        {
+            return None;
+        }
+
+        // Try decimal degrees with optional direction suffix
+        // e.g., "38.98", "38.98N", "-77.11", "77.11W"
+        let (num_str, direction) = Self::extract_direction(trimmed);
+        if let Ok(mut val) = num_str.parse::<f64>() {
+            // Apply direction
+            if matches!(direction, Some('S') | Some('W')) {
+                val = -val.abs();
+            } else if matches!(direction, Some('N') | Some('E')) {
+                val = val.abs();
+            }
+            return Some((val, CoordinateFormat::DecimalDegrees));
+        }
+
+        // Try DMS format: 38°58'48"N or 38 58 48 N
+        if let Some((val, _)) = Self::parse_dms(trimmed) {
+            return Some((val, CoordinateFormat::DMS));
+        }
+
+        None
+    }
+
+    /// Extract direction suffix (N/S/E/W) from coordinate string.
+    fn extract_direction(s: &str) -> (&str, Option<char>) {
+        let s = s.trim();
+        if let Some(last) = s.chars().last() {
+            if matches!(last, 'N' | 'S' | 'E' | 'W' | 'n' | 's' | 'e' | 'w') {
+                let num_part = s[..s.len() - 1].trim();
+                return (num_part, Some(last.to_ascii_uppercase()));
+            }
+        }
+        (s, None)
+    }
+
+    /// Parse DMS (Degrees Minutes Seconds) format.
+    fn parse_dms(s: &str) -> Option<(f64, char)> {
+        // Handle formats like: 38°58'48"N, 38 58 48 N, 38:58:48N
+        let s = s
+            .replace('°', " ")
+            .replace("'", " ")
+            .replace('"', " ")
+            .replace(':', " ");
+
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() < 3 {
+            return None;
+        }
+
+        let degrees: f64 = parts[0].parse().ok()?;
+        let minutes: f64 = parts[1].parse().ok()?;
+        let seconds: f64 = parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0.0);
+
+        let mut value = degrees + minutes / 60.0 + seconds / 3600.0;
+
+        // Check for direction
+        let direction = parts
+            .last()
+            .and_then(|s| s.chars().next())
+            .filter(|c| matches!(c, 'N' | 'S' | 'E' | 'W' | 'n' | 's' | 'e' | 'w'))
+            .map(|c| c.to_ascii_uppercase())
+            .unwrap_or('N');
+
+        if matches!(direction, 'S' | 'W') {
+            value = -value;
+        }
+
+        Some((value, direction))
+    }
+
+    /// Parse combined lat_lon format (e.g., "38.98 -77.11").
+    fn parse_combined(value: &str) -> Option<(f64, f64, CoordinateFormat)> {
+        let trimmed = value.trim();
+
+        // Skip null/missing values
+        if DataTable::is_null_value(trimmed)
+            || trimmed.is_empty()
+            || trimmed.eq_ignore_ascii_case("missing")
+            || trimmed.eq_ignore_ascii_case("not collected")
+            || trimmed.eq_ignore_ascii_case("not applicable")
+        {
+            return None;
+        }
+
+        // Split on whitespace, comma, or semicolon
+        let parts: Vec<&str> = trimmed
+            .split(|c: char| c.is_whitespace() || c == ',' || c == ';')
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        if parts.len() != 2 {
+            return None;
+        }
+
+        let (lat, lat_fmt) = Self::parse_coordinate(parts[0])?;
+        let (lon, lon_fmt) = Self::parse_coordinate(parts[1])?;
+
+        // Use the more specific format
+        let format = if lat_fmt == CoordinateFormat::DMS || lon_fmt == CoordinateFormat::DMS {
+            CoordinateFormat::DMS
+        } else {
+            CoordinateFormat::DecimalDegrees
+        };
+
+        Some((lat, lon, format))
+    }
+
+    /// Check if latitude is in valid range.
+    fn is_valid_latitude(lat: f64) -> bool {
+        (-90.0..=90.0).contains(&lat)
+    }
+
+    /// Check if longitude is in valid range.
+    fn is_valid_longitude(lon: f64) -> bool {
+        (-180.0..=180.0).contains(&lon)
+    }
+
+    /// Check if coordinates might be swapped (lat looks like lon or vice versa).
+    fn might_be_swapped(lat: f64, lon: f64) -> bool {
+        // If lat is out of range but would be valid as lon, and vice versa
+        !Self::is_valid_latitude(lat)
+            && Self::is_valid_longitude(lat)
+            && Self::is_valid_latitude(lon)
+    }
+}
+
+/// Type of coordinate column.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CoordinateType {
+    Latitude,
+    Longitude,
+    Combined,
+}
+
+/// Format of coordinate values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum CoordinateFormat {
+    DecimalDegrees,
+    DMS,
+}
+
+impl CoordinateFormat {
+    fn description(&self) -> &'static str {
+        match self {
+            CoordinateFormat::DecimalDegrees => "Decimal Degrees",
+            CoordinateFormat::DMS => "Degrees Minutes Seconds",
+        }
+    }
+}
+
+impl Validator for CoordinateValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        for col_schema in &schema.columns {
+            let coord_type = match Self::is_coordinate_column(&col_schema.name) {
+                Some(ct) => ct,
+                None => continue,
+            };
+
+            match coord_type {
+                CoordinateType::Combined => {
+                    observations.extend(self.validate_combined_column(table, col_schema));
+                }
+                CoordinateType::Latitude => {
+                    observations.extend(self.validate_latitude_column(table, col_schema));
+                }
+                CoordinateType::Longitude => {
+                    observations.extend(self.validate_longitude_column(table, col_schema));
+                }
+            }
+        }
+
+        observations
+    }
+}
+
+impl CoordinateValidator {
+    fn validate_combined_column(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+        let mut out_of_range: Vec<(usize, String, String)> = Vec::new();
+        let mut format_issues: IndexMap<CoordinateFormat, usize> = IndexMap::new();
+        let mut parse_errors: Vec<(usize, String)> = Vec::new();
+        let mut swapped: Vec<(usize, f64, f64)> = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            let trimmed = value.trim();
+            if DataTable::is_null_value(trimmed) || trimmed.is_empty() {
+                continue;
+            }
+
+            match Self::parse_combined(trimmed) {
+                Some((lat, lon, format)) => {
+                    *format_issues.entry(format).or_insert(0) += 1;
+
+                    if !Self::is_valid_latitude(lat) || !Self::is_valid_longitude(lon) {
+                        let issue = if !Self::is_valid_latitude(lat) {
+                            format!("latitude {} out of range [-90, 90]", lat)
+                        } else {
+                            format!("longitude {} out of range [-180, 180]", lon)
+                        };
+                        out_of_range.push((row_idx, trimmed.to_string(), issue));
+                    }
+
+                    if Self::might_be_swapped(lat, lon) {
+                        swapped.push((row_idx, lat, lon));
+                    }
+                }
+                None => {
+                    // Skip known null patterns
+                    if !trimmed.eq_ignore_ascii_case("missing")
+                        && !trimmed.eq_ignore_ascii_case("not collected")
+                        && !trimmed.eq_ignore_ascii_case("not applicable")
+                    {
+                        parse_errors.push((row_idx, trimmed.to_string()));
+                    }
+                }
+            }
+        }
+
+        // Report out-of-range coordinates
+        if !out_of_range.is_empty() {
+            let count = out_of_range.len();
+            let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Outlier,
+                    Severity::Error,
+                    &col_schema.name,
+                    format!(
+                        "{} coordinate(s) out of valid range: {}",
+                        count,
+                        out_of_range
+                            .iter()
+                            .take(2)
+                            .map(|(_, v, issue)| format!("'{}' ({})", v, issue))
+                            .collect::<Vec<_>>()
+                            .join("; ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(out_of_range.iter().take(5).map(|(r, _, _)| *r).collect())
+                        .with_expected(json!({
+                            "latitude_range": [-90, 90],
+                            "longitude_range": [-180, 180]
+                        })),
+                )
+                .with_confidence(0.95)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        // Report format inconsistencies
+        if format_issues.len() > 1 {
+            let total: usize = format_issues.values().sum();
+            let format_desc: Vec<String> = format_issues
+                .iter()
+                .map(|(fmt, count)| format!("{}: {}", fmt.description(), count))
+                .collect();
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "Mixed coordinate formats detected: {}. Consider standardizing to decimal degrees.",
+                        format_desc.join(", ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total)
+                        .with_value_counts(Some(json!(format_issues
+                            .iter()
+                            .map(|(f, c)| (f.description().to_string(), *c))
+                            .collect::<IndexMap<_, _>>()))),
+                )
+                .with_confidence(0.85)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        // Report potentially swapped coordinates
+        if !swapped.is_empty() {
+            let count = swapped.len();
+            let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Inconsistency,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "{} coordinate(s) may have latitude and longitude swapped",
+                        count
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(swapped.iter().take(5).map(|(r, _, _)| *r).collect()),
+                )
+                .with_confidence(0.75)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        // Report parse errors
+        if !parse_errors.is_empty() {
+            let count = parse_errors.len();
+            let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+            observations.push(
+                Observation::new(
+                    ObservationType::PatternViolation,
+                    Severity::Warning,
+                    &col_schema.name,
+                    format!(
+                        "{} value(s) could not be parsed as coordinates: {:?}",
+                        count,
+                        parse_errors.iter().take(3).map(|(_, v)| v).collect::<Vec<_>>()
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(parse_errors.iter().take(5).map(|(r, _)| *r).collect())
+                        .with_expected("Format: 'DD.DDDD DD.DDDD' or 'DD.DDDDN DD.DDDDW'"),
+                )
+                .with_confidence(0.80)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        observations
+    }
+
+    fn validate_latitude_column(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+        let mut out_of_range: Vec<(usize, f64)> = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            if let Some((lat, _)) = Self::parse_coordinate(value) {
+                if !Self::is_valid_latitude(lat) {
+                    out_of_range.push((row_idx, lat));
+                }
+            }
+        }
+
+        if !out_of_range.is_empty() {
+            let count = out_of_range.len();
+            let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Outlier,
+                    Severity::Error,
+                    &col_schema.name,
+                    format!(
+                        "{} latitude value(s) out of range [-90, 90]: {:?}",
+                        count,
+                        out_of_range.iter().take(3).map(|(_, v)| v).collect::<Vec<_>>()
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(out_of_range.iter().take(5).map(|(r, _)| *r).collect())
+                        .with_expected(json!({"min": -90, "max": 90})),
+                )
+                .with_confidence(0.95)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        observations
+    }
+
+    fn validate_longitude_column(
+        &self,
+        table: &DataTable,
+        col_schema: &ColumnSchema,
+    ) -> Vec<Observation> {
+        let mut observations = Vec::new();
+        let mut out_of_range: Vec<(usize, f64)> = Vec::new();
+
+        for (row_idx, value) in table.column_values(col_schema.position).enumerate() {
+            if let Some((lon, _)) = Self::parse_coordinate(value) {
+                if !Self::is_valid_longitude(lon) {
+                    out_of_range.push((row_idx, lon));
+                }
+            }
+        }
+
+        if !out_of_range.is_empty() {
+            let count = out_of_range.len();
+            let pct = (count as f64 / table.row_count() as f64) * 100.0;
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Outlier,
+                    Severity::Error,
+                    &col_schema.name,
+                    format!(
+                        "{} longitude value(s) out of range [-180, 180]: {:?}",
+                        count,
+                        out_of_range.iter().take(3).map(|(_, v)| v).collect::<Vec<_>>()
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(count)
+                        .with_percentage(pct)
+                        .with_sample_rows(out_of_range.iter().take(5).map(|(r, _)| *r).collect())
+                        .with_expected(json!({"min": -180, "max": 180})),
+                )
+                .with_confidence(0.95)
+                .with_detector("coordinate_validator"),
+            );
+        }
+
+        observations
+    }
+}
+
+// ============================================================================
+// Duplicate Row Validator
+// ============================================================================
+
+/// Validates for duplicate or near-duplicate rows.
+///
+/// Detects:
+/// - Exact duplicate rows (all values identical)
+/// - Near-duplicates (same values except for identifier column)
+/// - Conflicting duplicates (same ID but different values)
+pub struct DuplicateRowValidator {
+    /// Columns to exclude when checking for duplicates (typically identifiers).
+    exclude_patterns: Vec<&'static str>,
+}
+
+impl Default for DuplicateRowValidator {
+    fn default() -> Self {
+        Self {
+            exclude_patterns: vec![
+                "id", "sample_id", "patient_id", "subject_id", "row_id",
+                "index", "uuid", "guid", "key", "record_id",
+            ],
+        }
+    }
+}
+
+impl DuplicateRowValidator {
+    /// Check if a column should be excluded from duplicate detection.
+    fn is_excluded_column(&self, name: &str) -> bool {
+        let lower = name.to_lowercase();
+        self.exclude_patterns.iter().any(|p| lower.contains(p))
+    }
+
+    /// Get a hash key for a row (excluding identifier columns).
+    fn row_key(&self, table: &DataTable, schema: &TableSchema, row_idx: usize) -> String {
+        let mut parts = Vec::new();
+        for col in &schema.columns {
+            if !self.is_excluded_column(&col.name) {
+                let value = table.get(row_idx, col.position).unwrap_or_default();
+                parts.push(value.trim().to_lowercase());
+            }
+        }
+        parts.join("\0")
+    }
+
+    /// Get a full row key (including all columns).
+    fn full_row_key(&self, table: &DataTable, row_idx: usize) -> String {
+        let mut parts = Vec::new();
+        for col_idx in 0..table.column_count() {
+            let value = table.get(row_idx, col_idx).unwrap_or_default();
+            parts.push(value.trim().to_lowercase());
+        }
+        parts.join("\0")
+    }
+
+    /// Find the primary identifier column.
+    fn find_id_column<'a>(&self, schema: &'a TableSchema) -> Option<&'a ColumnSchema> {
+        // Prefer columns explicitly marked as identifiers
+        if let Some(col) = schema.columns.iter().find(|c| c.semantic_role == SemanticRole::Identifier) {
+            return Some(col);
+        }
+
+        // Fall back to name-based detection
+        for col in &schema.columns {
+            let lower = col.name.to_lowercase();
+            if lower == "sample_id"
+                || lower == "id"
+                || lower == "patient_id"
+                || lower == "subject_id"
+            {
+                return Some(col);
+            }
+        }
+
+        // Use first column if it looks like an ID
+        if let Some(first) = schema.columns.first() {
+            let lower = first.name.to_lowercase();
+            if lower.contains("id") || lower.contains("sample") || lower.contains("subject") {
+                return Some(first);
+            }
+        }
+
+        None
+    }
+}
+
+impl Validator for DuplicateRowValidator {
+    fn validate(&self, table: &DataTable, schema: &TableSchema) -> Vec<Observation> {
+        let mut observations = Vec::new();
+
+        if table.row_count() < 2 || schema.columns.is_empty() {
+            return observations;
+        }
+
+        // Find exact duplicates
+        let mut full_row_map: IndexMap<String, Vec<usize>> = IndexMap::new();
+        for row_idx in 0..table.row_count() {
+            let key = self.full_row_key(table, row_idx);
+            full_row_map.entry(key).or_default().push(row_idx);
+        }
+
+        let exact_duplicates: Vec<_> = full_row_map
+            .values()
+            .filter(|rows| rows.len() > 1)
+            .cloned()
+            .collect();
+
+        if !exact_duplicates.is_empty() {
+            let total_dup_rows: usize = exact_duplicates.iter().map(|g| g.len() - 1).sum();
+            let pct = (total_dup_rows as f64 / table.row_count() as f64) * 100.0;
+
+            let sample_groups: Vec<String> = exact_duplicates
+                .iter()
+                .take(3)
+                .map(|rows| {
+                    format!(
+                        "rows {}",
+                        rows.iter()
+                            .map(|r| (r + 1).to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                })
+                .collect();
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Duplicate,
+                    Severity::Error,
+                    "_table",
+                    format!(
+                        "{} exact duplicate row(s) found in {} group(s): {}",
+                        total_dup_rows,
+                        exact_duplicates.len(),
+                        sample_groups.join("; ")
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(total_dup_rows)
+                        .with_percentage(pct)
+                        .with_sample_rows(
+                            exact_duplicates
+                                .iter()
+                                .flat_map(|g| g.iter().skip(1))
+                                .take(5)
+                                .copied()
+                                .collect(),
+                        ),
+                )
+                .with_confidence(0.98)
+                .with_detector("duplicate_row_validator"),
+            );
+        }
+
+        // Find near-duplicates (same content except ID column)
+        let mut content_map: IndexMap<String, Vec<usize>> = IndexMap::new();
+        for row_idx in 0..table.row_count() {
+            let key = self.row_key(table, schema, row_idx);
+            content_map.entry(key).or_default().push(row_idx);
+        }
+
+        let near_duplicates: Vec<_> = content_map
+            .values()
+            .filter(|rows| rows.len() > 1)
+            .cloned()
+            .collect();
+
+        // Only report near-duplicates that aren't also exact duplicates
+        let near_only: Vec<_> = near_duplicates
+            .into_iter()
+            .filter(|rows| {
+                // Check if these rows have different IDs
+                let id_col = self.find_id_column(schema);
+                if let Some(id) = id_col {
+                    let ids: std::collections::HashSet<_> = rows
+                        .iter()
+                        .map(|r| table.get(*r, id.position).unwrap_or_default().to_lowercase())
+                        .collect();
+                    ids.len() > 1 // Different IDs but same content
+                } else {
+                    false
+                }
+            })
+            .collect();
+
+        if !near_only.is_empty() {
+            let total_near: usize = near_only.iter().map(|g| g.len()).sum();
+            let pct = (total_near as f64 / table.row_count() as f64) * 100.0;
+
+            let id_col_name = self
+                .find_id_column(schema)
+                .map(|c| c.name.as_str())
+                .unwrap_or("ID");
+
+            observations.push(
+                Observation::new(
+                    ObservationType::Duplicate,
+                    Severity::Warning,
+                    "_table",
+                    format!(
+                        "{} row(s) have identical content but different {} values (potential data entry duplicates)",
+                        total_near,
+                        id_col_name
+                    ),
+                )
+                .with_evidence(
+                    Evidence::new()
+                        .with_occurrences(near_only.len())
+                        .with_percentage(pct)
+                        .with_sample_rows(
+                            near_only
+                                .iter()
+                                .flat_map(|g| g.iter())
+                                .take(5)
+                                .copied()
+                                .collect(),
+                        ),
+                )
+                .with_confidence(0.85)
+                .with_detector("duplicate_row_validator"),
+            );
+        }
+
+        // Find ID conflicts (same ID but different content)
+        if let Some(id_col) = self.find_id_column(schema) {
+            let mut id_map: IndexMap<String, Vec<usize>> = IndexMap::new();
+            for row_idx in 0..table.row_count() {
+                let id = table.get(row_idx, id_col.position).unwrap_or_default();
+                if !DataTable::is_null_value(id) && !id.is_empty() {
+                    id_map.entry(id.to_lowercase()).or_default().push(row_idx);
+                }
+            }
+
+            let mut conflicts: Vec<(String, Vec<usize>)> = Vec::new();
+            for (id, rows) in &id_map {
+                if rows.len() > 1 {
+                    // Check if content differs
+                    let contents: std::collections::HashSet<_> = rows
+                        .iter()
+                        .map(|r| self.row_key(table, schema, *r))
+                        .collect();
+
+                    if contents.len() > 1 {
+                        conflicts.push((id.clone(), rows.clone()));
+                    }
+                }
+            }
+
+            if !conflicts.is_empty() {
+                let total_conflicts: usize = conflicts.iter().map(|(_, r)| r.len()).sum();
+                let pct = (total_conflicts as f64 / table.row_count() as f64) * 100.0;
+
+                let sample_ids: Vec<String> = conflicts
+                    .iter()
+                    .take(3)
+                    .map(|(id, rows)| format!("'{}' (rows {})", id, rows.len()))
+                    .collect();
+
+                observations.push(
+                    Observation::new(
+                        ObservationType::Inconsistency,
+                        Severity::Error,
+                        &id_col.name,
+                        format!(
+                            "{} {} value(s) appear multiple times with different data: {}",
+                            conflicts.len(),
+                            id_col.name,
+                            sample_ids.join(", ")
+                        ),
+                    )
+                    .with_evidence(
+                        Evidence::new()
+                            .with_occurrences(total_conflicts)
+                            .with_percentage(pct)
+                            .with_sample_rows(
+                                conflicts
+                                    .iter()
+                                    .flat_map(|(_, r)| r.iter())
+                                    .take(5)
+                                    .copied()
+                                    .collect(),
+                            )
+                            .with_value_counts(Some(json!(
+                                conflicts
+                                    .iter()
+                                    .take(5)
+                                    .map(|(id, rows)| (id.clone(), rows.len()))
+                                    .collect::<IndexMap<_, _>>()
+                            ))),
+                    )
+                    .with_confidence(0.95)
+                    .with_detector("duplicate_row_validator"),
+                );
+            }
+        }
+
+        observations
+    }
+}
+
 /// Composite validator that runs all validators.
 pub struct ValidationEngine {
     validators: Vec<Box<dyn Validator>>,
@@ -2428,6 +3241,8 @@ impl ValidationEngine {
                 Box::new(RegexPatternValidator),
                 Box::new(CrossColumnValidator),
                 Box::new(TitleCaseValidator),
+                Box::new(CoordinateValidator),
+                Box::new(DuplicateRowValidator::default()),
             ],
         }
     }

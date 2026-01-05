@@ -5,19 +5,19 @@
   "created": "2026-01-04",
   "domain": "environmental",
   "expected_observations": {
-    "min_count": 0,
-    "types": [],
-    "columns_with_issues": []
+    "min_count": 1,
+    "types": ["PatternViolation"],
+    "columns_with_issues": ["lat_lon"]
   },
   "expected_suggestions": {
-    "min_count": 0,
-    "actions": []
+    "min_count": 1,
+    "actions": ["Flag"]
   },
   "notes": [
-    "PLACEHOLDER: Coordinate validation not yet implemented",
-    "FUTURE: Should detect invalid lat/lon ranges (>90, >180)",
-    "FUTURE: Should detect coordinate format inconsistencies (DMS vs DD)",
-    "FUTURE: Should validate MIxS lat_lon format requirements",
-    "Test data includes: out-of-range coords, DMS format, reversed lat/lon, ocean coords"
+    "CoordinateValidator detects unparseable coordinate formats",
+    "ENV007: '40.7128 N, 74.0060 W' with degree symbol not parsed",
+    "Correctly skips null values: 'missing', 'not collected'",
+    "Correctly ignores geo_loc_name (location names, not coordinates)",
+    "FUTURE: Detect format inconsistencies (DMS vs DD) when multiple formats present"
   ]
 }
