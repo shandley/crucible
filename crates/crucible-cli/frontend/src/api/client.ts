@@ -4,6 +4,7 @@ import type {
   CalibrateConfidenceRequest,
   CalibrateConfidenceResponse,
   CurationResponse,
+  DataPreviewParams,
   DataPreviewResponse,
   DecisionResponse,
   ObservationExplanation,
@@ -82,8 +83,19 @@ export async function saveCuration(): Promise<SaveResponse> {
   return fetchApi<SaveResponse>('/save', { method: 'POST' })
 }
 
-export async function getDataPreview(): Promise<DataPreviewResponse> {
-  return fetchApi<DataPreviewResponse>('/data')
+export async function getDataPreview(
+  params?: DataPreviewParams
+): Promise<DataPreviewResponse> {
+  const queryParams = new URLSearchParams()
+  if (params?.offset !== undefined) {
+    queryParams.set('offset', String(params.offset))
+  }
+  if (params?.limit !== undefined) {
+    queryParams.set('limit', String(params.limit))
+  }
+  const queryString = queryParams.toString()
+  const url = queryString ? `/data?${queryString}` : '/data'
+  return fetchApi<DataPreviewResponse>(url)
 }
 
 export interface BatchRequest {

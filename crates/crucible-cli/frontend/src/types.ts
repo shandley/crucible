@@ -106,7 +106,21 @@ export interface DataPreviewResponse {
   headers: string[]
   rows: string[][]
   total_rows: number
+  /** Current offset (0-based). */
+  offset: number
+  /** Current limit. */
+  limit: number
+  /** Whether there are more rows after this page. */
+  has_more: boolean
+  /** Whether the data was truncated (legacy field). */
   truncated: boolean
+}
+
+export interface DataPreviewParams {
+  /** Number of rows to skip (default: 0). */
+  offset?: number
+  /** Maximum rows to return (default: 100, max: 500). */
+  limit?: number
 }
 
 // Interactive explanation types

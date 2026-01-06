@@ -114,7 +114,7 @@ export default function App() {
 
   const { data: dataPreview } = useQuery({
     queryKey: ['data-preview'],
-    queryFn: getDataPreview,
+    queryFn: () => getDataPreview(),
   })
 
   // Check if LLM is available for Ask feature

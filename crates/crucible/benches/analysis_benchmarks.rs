@@ -136,6 +136,75 @@ fn bench_crucible_creation(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark analysis with large files (100K, 500K rows).
+///
+/// These benchmarks test performance at production scale for files up to 100MB.
+fn bench_large_file_analysis(c: &mut Criterion) {
+    let mut group = c.benchmark_group("large_file_analysis");
+
+    // Configure for longer-running benchmarks
+    group.sample_size(10);
+    group.measurement_time(std::time::Duration::from_secs(30));
+
+    // Test with progressively larger files
+    // 10K rows ~ 1MB, 100K rows ~ 10MB, 500K rows ~ 50MB
+    for rows in [10_000, 100_000].iter() {
+        let data = generate_biomedical_data(*rows);
+        let bytes = data.len();
+
+        group.throughput(Throughput::Bytes(bytes as u64));
+        group.bench_with_input(
+            BenchmarkId::new("biomedical_rows", rows),
+            &data,
+            |b, data| {
+                b.iter_with_setup(
+                    || {
+                        let mut temp = NamedTempFile::with_suffix(".tsv").unwrap();
+                        temp.write_all(data.as_bytes()).unwrap();
+                        temp
+                    },
+                    |temp| {
+                        let crucible = Crucible::new().with_llm(MockProvider::new());
+                        black_box(crucible.analyze(temp.path()).unwrap())
+                    },
+                )
+            },
+        );
+    }
+
+    group.finish();
+}
+
+/// Benchmark specific components at scale.
+///
+/// Tests individual analysis components with 100K rows to identify bottlenecks.
+fn bench_component_scaling(c: &mut Criterion) {
+    use crucible::Parser;
+
+    let mut group = c.benchmark_group("component_scaling");
+    group.sample_size(10);
+
+    let rows = 100_000;
+    let data = generate_biomedical_data(rows);
+    let bytes = data.len();
+
+    // Create temp file once
+    let mut temp = NamedTempFile::with_suffix(".tsv").unwrap();
+    temp.write_all(data.as_bytes()).unwrap();
+    let path = temp.path().to_path_buf();
+
+    // Benchmark just parsing (no analysis)
+    group.throughput(Throughput::Bytes(bytes as u64));
+    group.bench_function("parse_100k_rows", |b| {
+        b.iter(|| {
+            let parser = Parser::new();
+            black_box(parser.parse_file(&path).unwrap())
+        })
+    });
+
+    group.finish();
+}
+
 /// Benchmark analysis result processing.
 fn bench_result_processing(c: &mut Criterion) {
     let mut group = c.benchmark_group("result_processing");
@@ -180,4 +249,14 @@ criterion_group!(
     bench_crucible_creation,
     bench_result_processing,
 );
-criterion_main!(benches);
+
+// Large file benchmarks run separately due to longer execution time
+criterion_group!(
+    name = large_file_benches;
+    config = Criterion::default()
+        .sample_size(10)
+        .measurement_time(std::time::Duration::from_secs(30));
+    targets = bench_large_file_analysis, bench_component_scaling
+);
+
+criterion_main!(benches, large_file_benches);

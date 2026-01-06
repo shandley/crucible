@@ -3,12 +3,148 @@
 use std::collections::HashMap;
 
 use indexmap::IndexMap;
+use once_cell::sync::Lazy;
+use regex::Regex;
 
 use crate::input::DataTable;
 use crate::schema::{
     ColumnStatistics, ColumnType, Constraint, NumericStatistics,
     SemanticType, StringStatistics,
 };
+
+// =============================================================================
+// LAZY STATIC PATTERNS
+// =============================================================================
+// Date patterns compiled once on first use.
+
+static DATE_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
+    vec![
+        Regex::new(r"^\d{4}-\d{2}-\d{2}").unwrap(),  // ISO date
+        Regex::new(r"^\d{2}/\d{2}/\d{4}").unwrap(),  // US date
+        Regex::new(r"^\d{2}-\d{2}-\d{4}").unwrap(),  // European date
+        Regex::new(r"^\d{4}/\d{2}/\d{2}").unwrap(),  // Alt ISO
+    ]
+});
+
+// =============================================================================
+// STREAMING STATISTICS
+// =============================================================================
+// Welford's online algorithm for computing mean and variance in a single pass.
+
+/// Streaming statistics accumulator using Welford's algorithm.
+/// Computes mean and variance in a single pass with O(1) memory.
+#[derive(Debug, Clone)]
+struct StreamingStats {
+    count: usize,
+    mean: f64,
+    m2: f64,  // Sum of squared differences from mean
+    min: f64,
+    max: f64,
+    /// Reservoir sample for approximate percentiles (avoids O(N log N) sort)
+    reservoir: Vec<f64>,
+    reservoir_capacity: usize,
+    /// Total values seen (for reservoir sampling)
+    total_seen: usize,
+}
+
+impl StreamingStats {
+    /// Create a new streaming statistics accumulator.
+    fn new(reservoir_capacity: usize) -> Self {
+        Self {
+            count: 0,
+            mean: 0.0,
+            m2: 0.0,
+            min: f64::INFINITY,
+            max: f64::NEG_INFINITY,
+            reservoir: Vec::with_capacity(reservoir_capacity),
+            reservoir_capacity,
+            total_seen: 0,
+        }
+    }
+
+    /// Add a value using Welford's online algorithm.
+    fn add(&mut self, value: f64) {
+        self.count += 1;
+        self.total_seen += 1;
+
+        // Welford's algorithm for stable mean and variance
+        let delta = value - self.mean;
+        self.mean += delta / self.count as f64;
+        let delta2 = value - self.mean;
+        self.m2 += delta * delta2;
+
+        // Track min/max
+        if value < self.min {
+            self.min = value;
+        }
+        if value > self.max {
+            self.max = value;
+        }
+
+        // Reservoir sampling for approximate percentiles
+        if self.reservoir.len() < self.reservoir_capacity {
+            self.reservoir.push(value);
+        } else {
+            // Random replacement with decreasing probability
+            let j = fastrand::usize(0..self.total_seen);
+            if j < self.reservoir_capacity {
+                self.reservoir[j] = value;
+            }
+        }
+    }
+
+    /// Get the population variance.
+    fn variance(&self) -> f64 {
+        if self.count < 2 {
+            0.0
+        } else {
+            self.m2 / self.count as f64
+        }
+    }
+
+    /// Get the standard deviation.
+    fn std(&self) -> f64 {
+        self.variance().sqrt()
+    }
+
+    /// Compute approximate percentile from reservoir sample.
+    fn percentile(&mut self, p: f64) -> f64 {
+        if self.reservoir.is_empty() {
+            return 0.0;
+        }
+
+        // Sort reservoir (small, constant size)
+        self.reservoir.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let idx = ((p / 100.0) * (self.reservoir.len() - 1) as f64).round() as usize;
+        self.reservoir[idx.min(self.reservoir.len() - 1)]
+    }
+
+    /// Convert to NumericStatistics.
+    fn to_numeric_statistics(&mut self) -> NumericStatistics {
+        if self.count == 0 {
+            return NumericStatistics {
+                min: 0.0,
+                max: 0.0,
+                mean: 0.0,
+                std: 0.0,
+                median: 0.0,
+                q1: 0.0,
+                q3: 0.0,
+            };
+        }
+
+        NumericStatistics {
+            min: self.min,
+            max: self.max,
+            mean: self.mean,
+            std: self.std(),
+            median: self.percentile(50.0),
+            q1: self.percentile(25.0),
+            q3: self.percentile(75.0),
+        }
+    }
+}
 
 /// Results from statistical analysis of a column.
 #[derive(Debug, Clone)]
@@ -247,24 +383,8 @@ impl StatisticalAnalyzer {
 
     /// Check if a value looks like a date.
     fn looks_like_date(&self, value: &str) -> bool {
-        // Common date patterns
-        let date_patterns = [
-            r"^\d{4}-\d{2}-\d{2}",           // ISO date
-            r"^\d{2}/\d{2}/\d{4}",           // US date
-            r"^\d{2}-\d{2}-\d{4}",           // European date
-            r"^\d{4}/\d{2}/\d{2}",           // Alt ISO
-        ];
-
-        for pattern in &date_patterns {
-            if regex::Regex::new(pattern)
-                .map(|r| r.is_match(value))
-                .unwrap_or(false)
-            {
-                return true;
-            }
-        }
-
-        false
+        // Use pre-compiled static patterns
+        DATE_PATTERNS.iter().any(|pattern| pattern.is_match(value))
     }
 
     /// Compute numeric and string statistics.
@@ -307,10 +427,12 @@ impl StatisticalAnalyzer {
         }
     }
 
-    /// Compute numeric statistics.
+    /// Compute numeric statistics using streaming algorithm.
+    ///
+    /// Uses Welford's online algorithm for mean/variance (single pass, O(1) memory)
+    /// and reservoir sampling for approximate percentiles (avoids O(N log N) sort).
     fn compute_numeric_stats(&self, values: &[f64]) -> NumericStatistics {
-        let n = values.len();
-        if n == 0 {
+        if values.is_empty() {
             return NumericStatistics {
                 min: 0.0,
                 max: 0.0,
@@ -322,34 +444,15 @@ impl StatisticalAnalyzer {
             };
         }
 
-        let mut sorted = values.to_vec();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        // Use reservoir size of 1000 for good percentile accuracy
+        // This is O(1) memory regardless of input size
+        let mut stats = StreamingStats::new(1000);
 
-        let min = sorted[0];
-        let max = sorted[n - 1];
-        let mean = values.iter().sum::<f64>() / n as f64;
-
-        let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
-        let std = variance.sqrt();
-
-        let median = if n % 2 == 0 {
-            (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
-        } else {
-            sorted[n / 2]
-        };
-
-        let q1 = sorted[n / 4];
-        let q3 = sorted[3 * n / 4];
-
-        NumericStatistics {
-            min,
-            max,
-            mean,
-            std,
-            median,
-            q1,
-            q3,
+        for &value in values {
+            stats.add(value);
         }
+
+        stats.to_numeric_statistics()
     }
 
     /// Infer semantic type from statistics.

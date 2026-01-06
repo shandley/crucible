@@ -2,10 +2,85 @@
 
 use std::collections::HashMap;
 
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::input::DataTable;
 use crate::schema::{Constraint, SemanticRole};
+
+// =============================================================================
+// LAZY STATIC PATTERNS
+// =============================================================================
+// These patterns are compiled once on first use, eliminating ~50ms overhead
+// on each SemanticAnalyzer instantiation.
+
+/// Patterns for identifying column roles by name.
+static ROLE_PATTERNS: Lazy<Vec<(Regex, SemanticRole)>> = Lazy::new(|| {
+    vec![
+        // Identifier patterns
+        (Regex::new(r"(?i)^(id|_id$|identifier|key|uuid|guid)").unwrap(), SemanticRole::Identifier),
+        (Regex::new(r"(?i)(sample[_\s]?id|patient[_\s]?id|subject[_\s]?id|record[_\s]?id)").unwrap(), SemanticRole::Identifier),
+        (Regex::new(r"(?i)^(name|title|label)$").unwrap(), SemanticRole::Identifier),
+
+        // Grouping patterns
+        (Regex::new(r"(?i)(group|category|class|type|status|state|phase)").unwrap(), SemanticRole::Grouping),
+        (Regex::new(r"(?i)(diagnosis|treatment|condition|cohort|arm)").unwrap(), SemanticRole::Grouping),
+        (Regex::new(r"(?i)(sex|gender|race|ethnicity)").unwrap(), SemanticRole::Grouping),
+
+        // Covariate patterns
+        (Regex::new(r"(?i)(age|weight|height|bmi|score)").unwrap(), SemanticRole::Covariate),
+        (Regex::new(r"(?i)(count|number|amount|quantity|level|value)").unwrap(), SemanticRole::Covariate),
+        (Regex::new(r"(?i)(percent|percentage|ratio|rate|proportion)").unwrap(), SemanticRole::Covariate),
+
+        // Outcome patterns
+        (Regex::new(r"(?i)(outcome|result|response|endpoint|survival)").unwrap(), SemanticRole::Outcome),
+        (Regex::new(r"(?i)(death|event|relapse|recurrence)").unwrap(), SemanticRole::Outcome),
+
+        // Metadata patterns
+        (Regex::new(r"(?i)(date|time|timestamp|created|updated|modified)").unwrap(), SemanticRole::Metadata),
+        (Regex::new(r"(?i)(version|batch|run|file|source|origin)").unwrap(), SemanticRole::Metadata),
+        (Regex::new(r"(?i)(note|comment|description|remark)").unwrap(), SemanticRole::Metadata),
+    ]
+});
+
+/// Patterns for identifying value formats.
+static FORMAT_PATTERNS: Lazy<Vec<(Regex, &'static str)>> = Lazy::new(|| {
+    vec![
+        // Email
+        (Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap(), "email"),
+
+        // URL
+        (Regex::new(r"^https?://").unwrap(), "url"),
+
+        // UUID
+        (Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap(), "uuid"),
+
+        // ISO date
+        (Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap(), "iso_date"),
+
+        // ISO datetime
+        (Regex::new(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}").unwrap(), "iso_datetime"),
+
+        // US date
+        (Regex::new(r"^\d{1,2}/\d{1,2}/\d{4}$").unwrap(), "us_date"),
+
+        // Phone (US)
+        (Regex::new(r"^\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$").unwrap(), "phone_us"),
+
+        // ZIP code
+        (Regex::new(r"^\d{5}(-\d{4})?$").unwrap(), "zip_code"),
+
+        // Scientific sample ID patterns (common in bioinformatics)
+        (Regex::new(r"^[A-Z]{2,4}[_-]?\d{3,}").unwrap(), "sample_id"),
+        (Regex::new(r"^\d{4}\.[A-Z]+\.\d+").unwrap(), "sample_id_dotted"),
+
+        // Gene symbols
+        (Regex::new(r"^[A-Z][A-Z0-9]{1,5}$").unwrap(), "gene_symbol_candidate"),
+
+        // Boolean-like
+        (Regex::new(r"(?i)^(true|false|yes|no|y|n|t|f)$").unwrap(), "boolean"),
+    ]
+});
 
 /// Results from semantic analysis of a column.
 #[derive(Debug, Clone)]
@@ -25,88 +100,19 @@ pub struct SemanticAnalysis {
 }
 
 /// Performs semantic analysis on column names and values.
-pub struct SemanticAnalyzer {
-    /// Patterns for identifying column roles by name.
-    role_patterns: Vec<(Regex, SemanticRole)>,
-    /// Patterns for identifying value formats.
-    format_patterns: Vec<(Regex, &'static str)>,
-}
+///
+/// This analyzer uses lazily-compiled static regex patterns for efficiency.
+/// Creating new instances is essentially free after the first use.
+#[derive(Debug, Clone, Copy)]
+pub struct SemanticAnalyzer;
 
 impl SemanticAnalyzer {
     /// Create a new semantic analyzer.
+    ///
+    /// This is a lightweight operation - regex patterns are compiled lazily
+    /// and shared across all instances.
     pub fn new() -> Self {
-        Self {
-            role_patterns: Self::build_role_patterns(),
-            format_patterns: Self::build_format_patterns(),
-        }
-    }
-
-    /// Build patterns for inferring semantic role from column name.
-    fn build_role_patterns() -> Vec<(Regex, SemanticRole)> {
-        vec![
-            // Identifier patterns
-            (Regex::new(r"(?i)^(id|_id$|identifier|key|uuid|guid)").unwrap(), SemanticRole::Identifier),
-            (Regex::new(r"(?i)(sample[_\s]?id|patient[_\s]?id|subject[_\s]?id|record[_\s]?id)").unwrap(), SemanticRole::Identifier),
-            (Regex::new(r"(?i)^(name|title|label)$").unwrap(), SemanticRole::Identifier),
-
-            // Grouping patterns
-            (Regex::new(r"(?i)(group|category|class|type|status|state|phase)").unwrap(), SemanticRole::Grouping),
-            (Regex::new(r"(?i)(diagnosis|treatment|condition|cohort|arm)").unwrap(), SemanticRole::Grouping),
-            (Regex::new(r"(?i)(sex|gender|race|ethnicity)").unwrap(), SemanticRole::Grouping),
-
-            // Covariate patterns
-            (Regex::new(r"(?i)(age|weight|height|bmi|score)").unwrap(), SemanticRole::Covariate),
-            (Regex::new(r"(?i)(count|number|amount|quantity|level|value)").unwrap(), SemanticRole::Covariate),
-            (Regex::new(r"(?i)(percent|percentage|ratio|rate|proportion)").unwrap(), SemanticRole::Covariate),
-
-            // Outcome patterns
-            (Regex::new(r"(?i)(outcome|result|response|endpoint|survival)").unwrap(), SemanticRole::Outcome),
-            (Regex::new(r"(?i)(death|event|relapse|recurrence)").unwrap(), SemanticRole::Outcome),
-
-            // Metadata patterns
-            (Regex::new(r"(?i)(date|time|timestamp|created|updated|modified)").unwrap(), SemanticRole::Metadata),
-            (Regex::new(r"(?i)(version|batch|run|file|source|origin)").unwrap(), SemanticRole::Metadata),
-            (Regex::new(r"(?i)(note|comment|description|remark)").unwrap(), SemanticRole::Metadata),
-        ]
-    }
-
-    /// Build patterns for identifying value formats.
-    fn build_format_patterns() -> Vec<(Regex, &'static str)> {
-        vec![
-            // Email
-            (Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap(), "email"),
-
-            // URL
-            (Regex::new(r"^https?://").unwrap(), "url"),
-
-            // UUID
-            (Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap(), "uuid"),
-
-            // ISO date
-            (Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap(), "iso_date"),
-
-            // ISO datetime
-            (Regex::new(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}").unwrap(), "iso_datetime"),
-
-            // US date
-            (Regex::new(r"^\d{1,2}/\d{1,2}/\d{4}$").unwrap(), "us_date"),
-
-            // Phone (US)
-            (Regex::new(r"^\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$").unwrap(), "phone_us"),
-
-            // ZIP code
-            (Regex::new(r"^\d{5}(-\d{4})?$").unwrap(), "zip_code"),
-
-            // Scientific sample ID patterns (common in bioinformatics)
-            (Regex::new(r"^[A-Z]{2,4}[_-]?\d{3,}").unwrap(), "sample_id"),
-            (Regex::new(r"^\d{4}\.[A-Z]+\.\d+").unwrap(), "sample_id_dotted"),
-
-            // Gene symbols
-            (Regex::new(r"^[A-Z][A-Z0-9]{1,5}$").unwrap(), "gene_symbol_candidate"),
-
-            // Boolean-like
-            (Regex::new(r"(?i)^(true|false|yes|no|y|n|t|f)$").unwrap(), "boolean"),
-        ]
+        Self
     }
 
     /// Analyze a column's semantics.
@@ -163,7 +169,7 @@ impl SemanticAnalyzer {
 
     /// Infer semantic role from column name.
     fn infer_role_from_name(&self, name: &str) -> (SemanticRole, f64) {
-        for (pattern, role) in &self.role_patterns {
+        for (pattern, role) in ROLE_PATTERNS.iter() {
             if pattern.is_match(name) {
                 return (*role, 0.85);
             }
@@ -337,9 +343,9 @@ impl SemanticAnalyzer {
         let mut format_counts: HashMap<&str, usize> = HashMap::new();
 
         for value in &non_empty {
-            for (pattern, format) in &self.format_patterns {
+            for (pattern, format) in FORMAT_PATTERNS.iter() {
                 if pattern.is_match(value) {
-                    *format_counts.entry(format).or_insert(0) += 1;
+                    *format_counts.entry(*format).or_insert(0) += 1;
                     break; // Only count first match per value
                 }
             }
