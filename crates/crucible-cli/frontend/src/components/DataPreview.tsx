@@ -48,7 +48,7 @@ export function DataPreview({ highlightedRows = [], highlightedColumn }: DataPre
       </div>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-muted">
+          <thead className="sticky top-0 z-0 bg-muted">
             <tr>
               <th className="w-12 border-b border-r px-2 py-1.5 text-left text-xs font-medium text-muted-foreground">
                 #

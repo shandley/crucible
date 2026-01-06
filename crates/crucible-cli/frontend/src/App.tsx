@@ -537,7 +537,7 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel: Suggestions */}
-        <div className="flex w-1/2 flex-col border-r">
+        <div className="relative z-10 flex w-1/2 flex-col border-r">
           <div className="flex items-center justify-between border-b bg-background px-4 py-3">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-medium">
