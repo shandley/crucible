@@ -3,6 +3,59 @@ import { askQuestion, getObservationExplanation } from '../api/client'
 import type { AskQuestionResponse, ObservationExplanation } from '../types'
 import { Button } from './Button'
 
+/** Loading spinner component */
+function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8',
+  }
+  return (
+    <svg
+      className={`animate-spin ${sizeClasses[size]}`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  )
+}
+
+/** Skeleton loading placeholder */
+function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
+  )
+}
+
+/** Loading state for explanation card */
+function ExplanationSkeleton() {
+  return (
+    <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+      <Skeleton className="h-5 w-32" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <div className="flex gap-4 mt-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+    </div>
+  )
+}
+
 interface AskQuestionDialogProps {
   observationId?: string
   suggestionId?: string
@@ -15,15 +68,18 @@ export function AskQuestionDialog({
   onClose,
 }: AskQuestionDialogProps) {
   const [question, setQuestion] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loadingExplanation, setLoadingExplanation] = useState(false)
+  const [loadingAnswer, setLoadingAnswer] = useState(false)
   const [response, setResponse] = useState<AskQuestionResponse | null>(null)
   const [explanation, setExplanation] = useState<ObservationExplanation | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const loading = loadingExplanation || loadingAnswer
+
   // Load initial explanation when dialog opens
   const loadExplanation = async () => {
     if (!observationId) return
-    setLoading(true)
+    setLoadingExplanation(true)
     setError(null)
     try {
       const result = await getObservationExplanation(observationId)
@@ -31,7 +87,7 @@ export function AskQuestionDialog({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load explanation')
     } finally {
-      setLoading(false)
+      setLoadingExplanation(false)
     }
   }
 
@@ -44,7 +100,7 @@ export function AskQuestionDialog({
     const q = questionText || question
     if (!q.trim()) return
 
-    setLoading(true)
+    setLoadingAnswer(true)
     setError(null)
     try {
       const result = await askQuestion({
@@ -57,7 +113,7 @@ export function AskQuestionDialog({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get answer')
     } finally {
-      setLoading(false)
+      setLoadingAnswer(false)
     }
   }
 
@@ -83,8 +139,9 @@ export function AskQuestionDialog({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Explanation Card */}
-          {explanation && (
+          {/* Explanation Card - with skeleton loading */}
+          {loadingExplanation && <ExplanationSkeleton />}
+          {!loadingExplanation && explanation && (
             <div className="bg-blue-50 rounded-lg p-4">
               <h3 className="font-medium text-blue-900 mb-2">Explanation</h3>
               <p className="text-blue-800 text-sm">{explanation.explanation}</p>
@@ -109,8 +166,19 @@ export function AskQuestionDialog({
             </div>
           )}
 
+          {/* Loading Answer Indicator */}
+          {loadingAnswer && (
+            <div className="bg-amber-50 rounded-lg p-4 flex items-center gap-3">
+              <LoadingSpinner size="sm" />
+              <div>
+                <h3 className="font-medium text-amber-900">Thinking...</h3>
+                <p className="text-amber-700 text-sm">AI is analyzing your question</p>
+              </div>
+            </div>
+          )}
+
           {/* Previous Response */}
-          {response && (
+          {!loadingAnswer && response && (
             <div className="bg-green-50 rounded-lg p-4">
               <h3 className="font-medium text-green-900 mb-2">Answer</h3>
               <p className="text-green-800 text-sm">{response.answer}</p>
@@ -162,8 +230,10 @@ export function AskQuestionDialog({
             <Button
               onClick={() => handleAsk()}
               disabled={loading || !question.trim()}
+              className="flex items-center gap-2"
             >
-              {loading ? 'Asking...' : 'Ask'}
+              {loadingAnswer && <LoadingSpinner size="sm" />}
+              {loadingAnswer ? 'Asking...' : 'Ask'}
             </Button>
           </div>
 

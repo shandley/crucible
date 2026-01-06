@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCuration, getDataPreview, acceptDecision, rejectDecision, resetDecision, saveCuration, batchAccept, batchReject, getLlmStatus } from './api/client'
 import type { BatchRequest } from './api/client'
-import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview, AskQuestionDialog } from './components'
+import { SuggestionCard, SuggestionGroup, StatusBar, Button, DataPreview, AskQuestionDialog, useToast } from './components'
 import type { DecisionInfo, SuggestionInfo, ObservationInfo, DataPreviewResponse } from './types'
 
 /** An action that can be undone/redone */
@@ -87,6 +87,7 @@ function formatRelativeTime(isoString: string): string {
 
 export default function App() {
   const queryClient = useQueryClient()
+  const { addToast } = useToast()
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null)
   const [undoStack, setUndoStack] = useState<UndoableAction[]>([])
   const [redoStack, setRedoStack] = useState<UndoableAction[]>([])
@@ -135,6 +136,9 @@ export default function App() {
       // Update saved timestamp (auto-save happens on backend)
       setLastSavedAt(new Date().toISOString())
     },
+    onError: (error: Error) => {
+      addToast(`Failed to accept: ${error.message}`, 'error')
+    },
   })
 
   const rejectMutation = useMutation({
@@ -148,6 +152,9 @@ export default function App() {
       // Update saved timestamp (auto-save happens on backend)
       setLastSavedAt(new Date().toISOString())
     },
+    onError: (error: Error) => {
+      addToast(`Failed to reject: ${error.message}`, 'error')
+    },
   })
 
   const resetMutation = useMutation({
@@ -157,12 +164,19 @@ export default function App() {
       // Update saved timestamp (auto-save happens on backend)
       setLastSavedAt(new Date().toISOString())
     },
+    onError: (error: Error) => {
+      addToast(`Failed to undo: ${error.message}`, 'error')
+    },
   })
 
   const saveMutation = useMutation({
     mutationFn: saveCuration,
     onSuccess: (data) => {
       setLastSavedAt(data.saved_at)
+      addToast('Progress saved successfully', 'success')
+    },
+    onError: (error: Error) => {
+      addToast(`Failed to save: ${error.message}`, 'error')
     },
   })
 
@@ -183,25 +197,33 @@ export default function App() {
 
   const batchAcceptMutation = useMutation({
     mutationFn: (request: BatchRequest) => batchAccept(request),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
       // Clear undo/redo stacks for batch operations
       setUndoStack([])
       setRedoStack([])
       // Update saved timestamp (auto-save happens on backend)
       setLastSavedAt(new Date().toISOString())
+      addToast(`Accepted ${data.processed} suggestions`, 'success')
+    },
+    onError: (error: Error) => {
+      addToast(`Batch accept failed: ${error.message}`, 'error')
     },
   })
 
   const batchRejectMutation = useMutation({
     mutationFn: (request: BatchRequest) => batchReject(request),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['curation'] })
       // Clear undo/redo stacks for batch operations
       setUndoStack([])
       setRedoStack([])
       // Update saved timestamp (auto-save happens on backend)
       setLastSavedAt(new Date().toISOString())
+      addToast(`Rejected ${data.processed} suggestions`, 'success')
+    },
+    onError: (error: Error) => {
+      addToast(`Batch reject failed: ${error.message}`, 'error')
     },
   })
 
@@ -510,6 +532,7 @@ export default function App() {
         summary={curation.summary}
         filename={curation.source.file}
         progress={curation.progress}
+        llmStatus={llmStatus}
       />
 
       <div className="flex flex-1 overflow-hidden">
