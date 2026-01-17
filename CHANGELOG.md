@@ -74,11 +74,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Criterion benchmarks for performance
 - MIxS schema conformance tests
 
+### Performance
+- Lazy regex compilation with once_cell (67,000x faster instance creation)
+- Streaming statistics with Welford's algorithm (O(N) single-pass, O(1) memory)
+- Reservoir sampling for approximate percentiles (avoids O(N log N) sort)
+- Pagination API for data preview (offset/limit with max 500 rows)
+- Virtual scrolling with @tanstack/react-virtual (smooth 500K+ row navigation)
+- Large file benchmarks (10K, 100K rows) for regression testing
+- 100K rows analyzed in ~1.9 seconds, 100MB files supported
+
 ### Fixed
 - Async runtime panic when using LLM providers (spawn_blocking fix)
 - Frontend not loading in development mode
 - Ask dialog follow-up question submission
 - Mock responses no longer reach users - real LLM required
+- Z-index overlap between left panel and data preview sticky header
 
 ### Documentation
 - User-focused README with installation and usage guide

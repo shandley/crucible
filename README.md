@@ -100,6 +100,8 @@ This opens your browser to `http://localhost:3141` where you can:
   - `Ctrl+Z` - Undo last decision
 - **Batch operations** - Accept or reject all suggestions for a column
 - **Ask AI questions** about observations (requires API key)
+- **Toast notifications** for save confirmations and errors
+- **AI status indicator** showing if LLM features are available
 
 **Options:**
 
@@ -346,12 +348,17 @@ echo $ANTHROPIC_API_KEY  # Should show your key
 
 The web UI header shows "AI: Enabled" or "AI: Disabled" to confirm status.
 
-### Large files are slow
+### Large files
 
-For files over 100MB, consider:
+Crucible is optimized for files up to 100MB (~500K rows):
+
+- **100K rows analyzed in ~2 seconds**
+- Virtual scrolling for smooth navigation through large datasets
+- Pagination API fetches data on-demand
+
+For very large files, skip AI enhancement for faster analysis:
 
 ```bash
-# Skip AI enhancement for faster analysis
 crucible analyze large_data.tsv --no-llm
 ```
 
